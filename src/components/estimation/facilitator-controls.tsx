@@ -29,6 +29,7 @@ interface FacilitatorControlsProps {
   readonly onAgree: (value: string) => void;
   readonly onNextTicket: () => void;
   readonly onRevote: () => void;
+  readonly onNoEstimate: () => void;
 }
 
 export function FacilitatorControls({
@@ -40,6 +41,7 @@ export function FacilitatorControls({
   onAgree,
   onNextTicket,
   onRevote,
+  onNoEstimate,
 }: FacilitatorControlsProps) {
   const [showPicker, setShowPicker] = useState(false);
 
@@ -77,6 +79,12 @@ export function FacilitatorControls({
                   ? "Reveal cards"
                   : "Reveal early"}
             </Button>
+            <button
+              onClick={onNoEstimate}
+              className="inline-flex items-center text-sm font-bold text-muted-foreground underline underline-offset-4 transition-colors hover:text-destructive"
+            >
+              No estimate
+            </button>
           </>
         )}
 
@@ -94,6 +102,12 @@ export function FacilitatorControls({
             >
               Set estimate
             </Button>
+            <button
+              onClick={onNoEstimate}
+              className="inline-flex items-center text-sm font-bold text-muted-foreground underline underline-offset-4 transition-colors hover:text-destructive"
+            >
+              No estimate
+            </button>
           </>
         )}
 
@@ -108,6 +122,12 @@ export function FacilitatorControls({
             >
               Set estimate
             </Button>
+            <button
+              onClick={onNoEstimate}
+              className="inline-flex items-center text-sm font-bold text-muted-foreground underline underline-offset-4 transition-colors hover:text-destructive"
+            >
+              No estimate
+            </button>
           </>
         )}
 

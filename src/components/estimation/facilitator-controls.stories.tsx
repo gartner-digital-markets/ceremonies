@@ -31,6 +31,7 @@ const meta = {
     onAgree: fn(),
     onNextTicket: fn(),
     onRevote: fn(),
+    onNoEstimate: fn(),
   },
 } satisfies Meta<typeof FacilitatorControls>;
 

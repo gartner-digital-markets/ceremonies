@@ -23,6 +23,10 @@ import { useAuth } from "@clerk/nextjs";
 import { NavArrowLeft, LogOut, Copy, Check, FloppyDisk, Download } from "iconoir-react";
 import { generateCSV, downloadCSV } from "@/lib/csv";
 
+const CARD_SORT_ORDER: Record<string, number> = {
+  "13": 13, "8": 8, "5": 5, "4": 4, "3": 3, "2": 2, "1": 1, coffee: 0, question: -1,
+};
+
 export default function EstimationRoomPage({
   params,
 }: {
@@ -173,6 +177,7 @@ function EstimationRoom({
     nudgeReceived,
     saveSession,
     saveResult,
+    noEstimate,
   } = useEstimationRoom({ roomId, playerName, clerkUserId });
 
   const { fire: fireConfetti, reset: resetConfetti } = useConfetti();
@@ -395,7 +400,16 @@ function EstimationRoom({
 
           {/* Vote cards (all participants) */}
           <div className="flex flex-wrap items-end justify-center gap-5">
-            {state.participants.map((p, i) => {
+            {(isRevealed
+              ? [...state.participants].sort((a, b) => {
+                  const aVote = state.votes.find((v) => v.odiedId === a.id);
+                  const bVote = state.votes.find((v) => v.odiedId === b.id);
+                  const aVal = aVote != null ? (CARD_SORT_ORDER[aVote.value] ?? -2) : -99;
+                  const bVal = bVote != null ? (CARD_SORT_ORDER[bVote.value] ?? -2) : -99;
+                  return bVal - aVal;
+                })
+              : state.participants
+            ).map((p, i) => {
               const pVote = state.votes.find((v) => v.odiedId === p.id);
               return (
                 <VoteCard
@@ -486,6 +500,10 @@ function EstimationRoom({
               onNextTicket={handleNextTicket}
               onRevote={() => {
                 revote();
+                setSelectedCard(null);
+              }}
+              onNoEstimate={() => {
+                noEstimate();
                 setSelectedCard(null);
               }}
             />

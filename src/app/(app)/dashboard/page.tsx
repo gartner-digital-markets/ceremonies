@@ -8,6 +8,7 @@ import { GhostIcon, OwlIcon } from "@/components/shared/icons";
 import { ThemeToggle } from "@/components/shared/theme-toggle";
 import { UserButton } from "@clerk/nextjs";
 import { TeamSelector } from "@/components/teams/team-selector";
+import { ClaimSession } from "@/components/estimation/claim-session";
 
 export default async function DashboardPage({
   searchParams,
@@ -112,9 +113,11 @@ export default async function DashboardPage({
 
         {/* Estimation sessions */}
         <div className="space-y-3">
-          <h2 className="text-[10px] font-bold uppercase tracking-[0.12em] text-muted-foreground">
-            Estimation sessions ({pastEstimations.length})
-          </h2>
+          <div className="flex items-center justify-between">
+            <h2 className="text-[10px] font-bold uppercase tracking-[0.12em] text-muted-foreground">
+              Estimation sessions ({pastEstimations.length})
+            </h2>
+          </div>
 
           {pastEstimations.length === 0 && (
             <div className="rounded-md border-2 border-dashed border-border p-8 text-center">
@@ -177,6 +180,17 @@ export default async function DashboardPage({
               )}
             </div>
           ))}
+
+          {/* Claim a past session */}
+          <div className="rounded-md border-2 border-dashed border-border p-3 space-y-1.5">
+            <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-muted-foreground">
+              Claim a past session
+            </p>
+            <p className="text-xs text-muted-foreground">
+              Ran a session without signing in? Enter the room code to add it to your history.
+            </p>
+            <ClaimSession />
+          </div>
         </div>
 
         {/* Past retros */}

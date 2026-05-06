@@ -32,6 +32,7 @@ interface UseEstimationRoomResult {
   readonly agree: (value: CardValue) => void;
   readonly nextTicket: () => void;
   readonly revote: () => void;
+  readonly noEstimate: () => void;
   readonly nudge: () => void;
   readonly saveSession: (teamId?: string) => void;
 }
@@ -135,6 +136,10 @@ export function useEstimationRoom({
     send({ type: "REVOTE", facilitatorId: myId ?? "" });
   }, [send, myId]);
 
+  const noEstimate = useCallback(() => {
+    send({ type: "NO_ESTIMATE", facilitatorId: myId ?? "" });
+  }, [send, myId]);
+
   const nudge = useCallback(() => {
     send({ type: "NUDGE" } as unknown as EstimationEvent);
   }, [send]);
@@ -171,6 +176,7 @@ export function useEstimationRoom({
     agree,
     nextTicket,
     revote,
+    noEstimate,
     nudge,
     nudgeReceived,
     saveSession,
