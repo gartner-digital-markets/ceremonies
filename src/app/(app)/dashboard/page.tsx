@@ -2,7 +2,7 @@ import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import { getDb } from "@/lib/db";
 import { teams, teamMembers, retros, actionItems, estimationSessions, estimationResults } from "@/lib/db/schema";
-import { eq, desc, or } from "drizzle-orm";
+import { eq, desc, or, and, isNull } from "drizzle-orm";
 import Link from "next/link";
 import { GhostIcon, OwlIcon } from "@/components/shared/icons";
 import { ThemeToggle } from "@/components/shared/theme-toggle";
@@ -310,20 +310,21 @@ async function fetchRetros(userId: string, teamId?: string) {
 async function fetchEstimations(userId: string, teamId?: string) {
   const db = getDb();
 
-  // Fetch by teamId if available, otherwise by createdBy
-  const sessions = teamId
-    ? await db
-        .select()
-        .from(estimationSessions)
-        .where(eq(estimationSessions.teamId, teamId))
-        .orderBy(desc(estimationSessions.createdAt))
-        .limit(20)
-    : await db
-        .select()
-        .from(estimationSessions)
-        .where(eq(estimationSessions.createdBy, userId))
-        .orderBy(desc(estimationSessions.createdAt))
-        .limit(20);
+  // When a team is active: show team sessions + the user's personal (teamless) sessions.
+  // When no team: show sessions the user created.
+  const whereClause = teamId
+    ? or(
+        eq(estimationSessions.teamId, teamId),
+        and(eq(estimationSessions.createdBy, userId), isNull(estimationSessions.teamId))
+      )
+    : eq(estimationSessions.createdBy, userId);
+
+  const sessions = await db
+    .select()
+    .from(estimationSessions)
+    .where(whereClause)
+    .orderBy(desc(estimationSessions.createdAt))
+    .limit(20);
 
   const result = await Promise.all(
     sessions.map(async (session) => {
