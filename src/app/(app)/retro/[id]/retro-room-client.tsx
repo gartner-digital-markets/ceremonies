@@ -350,7 +350,7 @@ function RetroRoom({
         )}
 
         {state.phase === "closed" && (
-          <ClosedPhase state={state} onDone={onLeave} />
+          <ClosedPhase roomId={roomId} state={state} onDone={onLeave} />
         )}
       </div>
     </div>
@@ -490,13 +490,17 @@ function LobbyPhase({
 // ── Closed Phase ──
 
 function ClosedPhase({
+  roomId,
   state,
   onDone,
 }: {
+  roomId: string;
   state: RetroState;
   onDone: () => void;
 }) {
   const [copied, setCopied] = useState(false);
+  const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
+  const [saveError, setSaveError] = useState<string | null>(null);
   const stats = getRetroStats(state);
 
   // Build summary text grouped by topic
@@ -553,6 +557,26 @@ function ClosedPhase({
     );
     downloadCSV(csv, `retro-actions-${new Date().toISOString().slice(0, 10)}.csv`);
   }, [state]);
+
+  const handleSaveToHistory = useCallback(async () => {
+    setSaveStatus("saving");
+    setSaveError(null);
+    try {
+      const res = await fetch("/api/retros/save-recovery", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ roomCode: roomId, state }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({ error: `HTTP ${res.status}` })) as { error?: string };
+        throw new Error(data.error ?? `HTTP ${res.status}`);
+      }
+      setSaveStatus("saved");
+    } catch (err: unknown) {
+      setSaveError(err instanceof Error ? err.message : "Unknown error");
+      setSaveStatus("error");
+    }
+  }, [roomId, state]);
 
   return (
     <div className="stagger-in mx-auto max-w-2xl space-y-6">
@@ -649,6 +673,24 @@ function ClosedPhase({
             </Button>
           )}
         </div>
+        {saveStatus !== "saved" && (
+          <Button
+            onClick={handleSaveToHistory}
+            disabled={saveStatus === "saving"}
+            variant="outline"
+            className="w-full"
+          >
+            {saveStatus === "saving" ? "Saving..." : "Save to history"}
+          </Button>
+        )}
+        {saveStatus === "saved" && (
+          <p className="text-center text-xs font-bold text-primary">
+            Saved! Check your dashboard to see it.
+          </p>
+        )}
+        {saveStatus === "error" && saveError && (
+          <p className="text-center text-xs text-destructive">{saveError}</p>
+        )}
         <Button onClick={onDone} className="w-full">
           Done
         </Button>
