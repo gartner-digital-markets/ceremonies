@@ -10,7 +10,12 @@ import type {
 } from "@/lib/state-machines/retro";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { HappyIcon, SadIcon, ConfusedIcon, GhostIcon } from "@/components/shared/icons";
+import {
+  HappyIcon,
+  SadIcon,
+  ConfusedIcon,
+  GhostIcon,
+} from "@/components/shared/icons";
 import { cn } from "@/lib/utils";
 import { Plus, Xmark, User, Check } from "iconoir-react";
 
@@ -21,12 +26,19 @@ interface DiscussActPhaseProps {
   readonly actionItems: ReadonlyArray<ActionItem>;
   readonly participants: ReadonlyArray<Participant>;
   readonly isFacilitator: boolean;
-  readonly onAddItem: (text: string, assignees: ReadonlyArray<string>, groupId: string | null) => void;
+  readonly onAddItem: (
+    text: string,
+    assignees: ReadonlyArray<string>,
+    groupId: string | null,
+  ) => void;
   readonly onRemoveItem: (itemId: string) => void;
   readonly onClose: () => void;
 }
 
-const CATEGORY_ICON: Record<CardCategory, React.ComponentType<{ size?: number; className?: string }>> = {
+const CATEGORY_ICON: Record<
+  CardCategory,
+  React.ComponentType<{ size?: number; className?: string }>
+> = {
   happy: HappyIcon,
   sad: SadIcon,
   confused: ConfusedIcon,
@@ -54,13 +66,13 @@ export function DiscussActPhase({
       rankedGroupIds
         .map((id) => groups.find((g) => g.id === id))
         .filter(Boolean) as ReadonlyArray<CardGroup>,
-    [rankedGroupIds, groups]
+    [rankedGroupIds, groups],
   );
 
   // Also include unranked groups (0 votes) at the bottom
   const unrankedGroups = useMemo(
     () => groups.filter((g) => !rankedGroupIds.includes(g.id)),
-    [groups, rankedGroupIds]
+    [groups, rankedGroupIds],
   );
 
   const allGroups = [...rankedGroups, ...unrankedGroups];
@@ -73,7 +85,8 @@ export function DiscussActPhase({
           Discuss & Act
         </h2>
         <p className="mt-2 text-sm text-muted-foreground">
-          Talk through each topic. Write action items as you go. This is your retro snapshot.
+          Talk through each topic. Write action items as you go. This is your
+          retro snapshot.
         </p>
       </div>
 
@@ -83,7 +96,9 @@ export function DiscussActPhase({
           const groupCards = group.cardIds
             .map((id) => cards.find((c) => c.id === id))
             .filter(Boolean) as ReadonlyArray<RetroCard>;
-          const groupActions = actionItems.filter((a) => a.groupId === group.id);
+          const groupActions = actionItems.filter(
+            (a) => a.groupId === group.id,
+          );
 
           return (
             <TopicSection
@@ -119,7 +134,8 @@ export function DiscussActPhase({
             Close retro
           </Button>
           <p className="mt-2 text-xs text-muted-foreground">
-            {actionItems.length} action item{actionItems.length !== 1 ? "s" : ""} will haunt you next time
+            {actionItems.length} action item
+            {actionItems.length !== 1 ? "s" : ""} will haunt you next time
           </p>
         </div>
       )}
@@ -146,7 +162,11 @@ function TopicSection({
   participants: ReadonlyArray<Participant>;
   isFacilitator: boolean;
   rank: number;
-  onAddItem: (text: string, assignees: ReadonlyArray<string>, groupId: string | null) => void;
+  onAddItem: (
+    text: string,
+    assignees: ReadonlyArray<string>,
+    groupId: string | null,
+  ) => void;
   onRemoveItem: (itemId: string) => void;
   animationDelay: number;
 }) {
@@ -179,7 +199,10 @@ function TopicSection({
               key={card.id}
               className="flex items-start gap-2 rounded-md border border-border bg-background p-3 text-sm"
             >
-              <Icon size={18} className={cn("mt-0.5 shrink-0", CATEGORY_COLOR[card.category])} />
+              <Icon
+                size={22}
+                className={cn("mt-0.5 shrink-0", CATEGORY_COLOR[card.category])}
+              />
               <span>{card.text}</span>
             </div>
           );
@@ -233,7 +256,11 @@ function GeneralActions({
   actionItems: ReadonlyArray<ActionItem>;
   participants: ReadonlyArray<Participant>;
   isFacilitator: boolean;
-  onAddItem: (text: string, assignees: ReadonlyArray<string>, groupId: string | null) => void;
+  onAddItem: (
+    text: string,
+    assignees: ReadonlyArray<string>,
+    groupId: string | null,
+  ) => void;
   onRemoveItem: (itemId: string) => void;
 }) {
   return (
@@ -272,7 +299,11 @@ function InlineActionInput({
 }: {
   participants: ReadonlyArray<Participant>;
   groupId: string | null;
-  onAdd: (text: string, assignees: ReadonlyArray<string>, groupId: string | null) => void;
+  onAdd: (
+    text: string,
+    assignees: ReadonlyArray<string>,
+    groupId: string | null,
+  ) => void;
 }) {
   const [text, setText] = useState("");
   const [assignees, setAssignees] = useState<ReadonlyArray<string>>([]);
@@ -289,7 +320,7 @@ function InlineActionInput({
 
   const toggleAssignee = (name: string) => {
     setAssignees((prev) =>
-      prev.includes(name) ? prev.filter((n) => n !== name) : [...prev, name]
+      prev.includes(name) ? prev.filter((n) => n !== name) : [...prev, name],
     );
   };
 
@@ -327,7 +358,7 @@ function InlineActionInput({
                   "flex items-center gap-1 rounded-md border px-2 py-0.5 text-[10px] font-medium transition-colors",
                   isSelected
                     ? "border-primary bg-primary/10 text-primary"
-                    : "border-border text-muted-foreground hover:border-foreground/30"
+                    : "border-border text-muted-foreground hover:border-foreground/30",
                 )}
               >
                 <User width={10} height={10} />

@@ -1,5 +1,10 @@
 import Link from "next/link";
-import { GhostIcon, HappyIcon, SadIcon, ConfusedIcon } from "@/components/shared/icons";
+import {
+  GhostIcon,
+  HappyIcon,
+  SadIcon,
+  ConfusedIcon,
+} from "@/components/shared/icons";
 import { cn } from "@/lib/utils";
 import { NavArrowLeft } from "iconoir-react";
 
@@ -38,7 +43,10 @@ export interface ClosedRetroSummaryProps {
 
 // ── Icon + color maps ──
 
-const CATEGORY_ICON: Record<CardCategory, React.ComponentType<{ size?: number; className?: string }>> = {
+const CATEGORY_ICON: Record<
+  CardCategory,
+  React.ComponentType<{ size?: number; className?: string }>
+> = {
   happy: HappyIcon,
   sad: SadIcon,
   confused: ConfusedIcon,
@@ -169,8 +177,11 @@ function GroupCard({ group, rank }: { group: SummaryGroup; rank: number }) {
                 className="flex items-start gap-2 rounded-md border border-border bg-background p-3 text-sm"
               >
                 <Icon
-                  size={18}
-                  className={cn("mt-0.5 shrink-0", CATEGORY_COLOR[card.category])}
+                  size={22}
+                  className={cn(
+                    "mt-0.5 shrink-0",
+                    CATEGORY_COLOR[card.category],
+                  )}
                 />
                 <span>{card.text}</span>
               </div>
@@ -181,7 +192,12 @@ function GroupCard({ group, rank }: { group: SummaryGroup; rank: number }) {
 
       {/* Action items */}
       {group.actionItems.length > 0 && (
-        <div className={cn("border-t-2 border-dashed border-border bg-muted/20 px-5 py-4", group.cards.length === 0 && "border-t-0")}>
+        <div
+          className={cn(
+            "border-t-2 border-dashed border-border bg-muted/20 px-5 py-4",
+            group.cards.length === 0 && "border-t-0",
+          )}
+        >
           <div className="flex items-center gap-2 mb-3">
             <GhostIcon size={16} className="text-coffee" />
             <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-muted-foreground">

@@ -12,7 +12,10 @@ import { HappyIcon, SadIcon, ConfusedIcon } from "@/components/shared/icons";
 import { cn } from "@/lib/utils";
 import { Play, Pause, FastArrowRight } from "iconoir-react";
 
-const CATEGORY_ICON: Record<CardCategory, React.ComponentType<{ size?: number; className?: string }>> = {
+const CATEGORY_ICON: Record<
+  CardCategory,
+  React.ComponentType<{ size?: number; className?: string }>
+> = {
   happy: HappyIcon,
   sad: SadIcon,
   confused: ConfusedIcon,
@@ -35,7 +38,6 @@ interface DiscussionPhaseProps {
   readonly onAdvance: () => void;
 }
 
-
 function formatTime(seconds: number): string {
   const mins = Math.floor(seconds / 60);
   const secs = seconds % 60;
@@ -56,14 +58,15 @@ export function DiscussionPhase({
   const currentGroup = groups.find((g) => g.id === currentGroupId);
   const isLastTopic = discussion.currentGroupIndex >= rankedGroupIds.length - 1;
   const timerExpired = discussion.timerRemaining <= 0;
-  const timerWarning = discussion.timerRemaining <= 30 && discussion.timerRemaining > 0;
+  const timerWarning =
+    discussion.timerRemaining <= 30 && discussion.timerRemaining > 0;
 
   const rankedGroups = useMemo(
     () =>
       rankedGroupIds
         .map((id) => groups.find((g) => g.id === id))
         .filter(Boolean) as ReadonlyArray<CardGroup>,
-    [rankedGroupIds, groups]
+    [rankedGroupIds, groups],
   );
 
   const currentCards = useMemo(() => {
@@ -103,9 +106,10 @@ export function DiscussionPhase({
           <div
             className={cn(
               "flex h-24 w-24 items-center justify-center rounded-full border-4 font-mono text-2xl font-bold transition-colors",
-              timerExpired && "border-destructive text-destructive animate-pulse",
+              timerExpired &&
+                "border-destructive text-destructive animate-pulse",
               timerWarning && !timerExpired && "border-warning text-warning",
-              !timerWarning && !timerExpired && "border-primary text-primary"
+              !timerWarning && !timerExpired && "border-primary text-primary",
             )}
           >
             {formatTime(discussion.timerRemaining)}
@@ -154,7 +158,8 @@ export function DiscussionPhase({
               {currentGroup.label}
             </h3>
             <span className="rounded-md bg-primary/15 px-2.5 py-1 font-mono text-sm font-bold text-primary">
-              {currentGroup.voteCount} vote{currentGroup.voteCount !== 1 ? "s" : ""}
+              {currentGroup.voteCount} vote
+              {currentGroup.voteCount !== 1 ? "s" : ""}
             </span>
           </div>
           <div className="mt-4 space-y-2">
@@ -165,7 +170,15 @@ export function DiscussionPhase({
               >
                 {(() => {
                   const Icon = CATEGORY_ICON[card.category];
-                  return <Icon size={18} className={cn("mt-0.5 shrink-0", CATEGORY_COLOR[card.category])} />;
+                  return (
+                    <Icon
+                      size={22}
+                      className={cn(
+                        "mt-0.5 shrink-0",
+                        CATEGORY_COLOR[card.category],
+                      )}
+                    />
+                  );
                 })()}
                 {card.text}
               </div>
@@ -189,7 +202,7 @@ export function DiscussionPhase({
                   ? "border-primary bg-primary/10 text-primary"
                   : i < discussion.currentGroupIndex
                     ? "border-border bg-muted text-muted-foreground line-through"
-                    : "border-border text-muted-foreground"
+                    : "border-border text-muted-foreground",
               )}
             >
               {group.label} ({group.voteCount})

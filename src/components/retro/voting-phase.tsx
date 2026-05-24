@@ -1,13 +1,22 @@
 "use client";
 
-import type { CardGroup, RetroCard, CardCategory, Participant, RetroVote } from "@/lib/state-machines/retro";
+import type {
+  CardGroup,
+  RetroCard,
+  CardCategory,
+  Participant,
+  RetroVote,
+} from "@/lib/state-machines/retro";
 import { getVotingStatus } from "@/lib/state-machines/retro";
 import { Button } from "@/components/ui/button";
 import { HappyIcon, SadIcon, ConfusedIcon } from "@/components/shared/icons";
 import { cn } from "@/lib/utils";
 import { Plus, Minus, Check, WarningTriangle } from "iconoir-react";
 
-const CATEGORY_ICON: Record<CardCategory, React.ComponentType<{ size?: number; className?: string }>> = {
+const CATEGORY_ICON: Record<
+  CardCategory,
+  React.ComponentType<{ size?: number; className?: string }>
+> = {
   happy: HappyIcon,
   sad: SadIcon,
   confused: ConfusedIcon,
@@ -75,7 +84,7 @@ export function VotingPhase({
                 "h-4 w-4 rounded-full border-2 transition-all",
                 i < myVoteCount
                   ? "border-primary bg-primary scale-110"
-                  : "border-border bg-transparent"
+                  : "border-border bg-transparent",
               )}
             />
           ))}
@@ -110,7 +119,7 @@ export function VotingPhase({
           <div
             className={cn(
               "h-full rounded-full transition-all duration-500",
-              allVotesIn ? "bg-success" : "bg-primary"
+              allVotesIn ? "bg-success" : "bg-primary",
             )}
             style={{
               width: `${participants.length > 0 ? (votingStatus.voted.length / participants.length) * 100 : 0}%`,
@@ -129,7 +138,7 @@ export function VotingPhase({
                   "inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[10px] font-bold",
                   hasVoted
                     ? "bg-success/15 text-success"
-                    : "bg-muted text-muted-foreground"
+                    : "bg-muted text-muted-foreground",
                 )}
               >
                 {hasVoted ? (
@@ -183,7 +192,10 @@ export function VotingPhase({
                           key={card.id}
                           className="flex items-center gap-1 text-xs text-muted-foreground"
                         >
-                          <Icon size={14} className={CATEGORY_COLOR[card.category]} />
+                          <Icon
+                            size={16}
+                            className={CATEGORY_COLOR[card.category]}
+                          />
                           {card.text.slice(0, 30)}
                           {card.text.length > 30 ? "..." : ""}
                         </span>
@@ -209,7 +221,7 @@ export function VotingPhase({
                           "flex h-8 w-8 items-center justify-center rounded-md border-2 border-border transition-colors",
                           myVotesOnThis > 0
                             ? "hover:border-destructive hover:text-destructive"
-                            : "opacity-30"
+                            : "opacity-30",
                         )}
                         aria-label="Remove vote"
                       >
@@ -217,12 +229,14 @@ export function VotingPhase({
                       </button>
 
                       {/* Show YOUR votes on this group, not the total */}
-                      <div className={cn(
-                        "flex h-10 w-10 items-center justify-center rounded-md border-2 font-mono text-lg font-bold",
-                        myVotesOnThis > 0
-                          ? "border-primary bg-primary/10 text-primary"
-                          : "border-border bg-muted text-muted-foreground"
-                      )}>
+                      <div
+                        className={cn(
+                          "flex h-10 w-10 items-center justify-center rounded-md border-2 font-mono text-lg font-bold",
+                          myVotesOnThis > 0
+                            ? "border-primary bg-primary/10 text-primary"
+                            : "border-border bg-muted text-muted-foreground",
+                        )}
+                      >
                         {myVotesOnThis}
                       </div>
 
@@ -233,7 +247,7 @@ export function VotingPhase({
                           "flex h-8 w-8 items-center justify-center rounded-md border-2 border-border transition-colors",
                           votesRemaining > 0
                             ? "hover:border-primary hover:text-primary"
-                            : "opacity-30"
+                            : "opacity-30",
                         )}
                         aria-label="Add vote"
                       >
@@ -273,7 +287,8 @@ export function VotingPhase({
       {isFacilitator && !allVotesIn && (
         <div className="space-y-1.5 text-center pt-2">
           <p className="text-xs text-muted-foreground">
-            Waiting for everyone to vote ({votingStatus.voted.length}/{participants.length} done)...
+            Waiting for everyone to vote ({votingStatus.voted.length}/
+            {participants.length} done)...
           </p>
           <button
             onClick={onAdvance}

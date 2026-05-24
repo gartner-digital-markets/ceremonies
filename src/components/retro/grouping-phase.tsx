@@ -41,22 +41,38 @@ function getCanvasHeight(cardCount: number): number {
   return Math.min(BASE_CANVAS_HEIGHT + extra, 2400); // cap at 2400
 }
 
-const CATEGORY_ICON: Record<CardCategory, React.ComponentType<{ size?: number; className?: string }>> = {
+const CATEGORY_ICON: Record<
+  CardCategory,
+  React.ComponentType<{ size?: number; className?: string }>
+> = {
   happy: HappyIcon,
   sad: SadIcon,
   confused: ConfusedIcon,
 };
 
-const CATEGORY_STYLE: Record<CardCategory, { border: string; bg: string; color: string }> = {
+const CATEGORY_STYLE: Record<
+  CardCategory,
+  { border: string; bg: string; color: string }
+> = {
   happy: { border: "border-happy/40", bg: "bg-happy/15", color: "text-happy" },
   sad: { border: "border-sad/40", bg: "bg-sad/15", color: "text-sad" },
-  confused: { border: "border-confused/40", bg: "bg-confused/15", color: "text-confused" },
+  confused: {
+    border: "border-confused/40",
+    bg: "bg-confused/15",
+    color: "text-confused",
+  },
 };
 
 // Cursor colors for participants
 const CURSOR_COLORS = [
-  "#ef4444", "#3b82f6", "#22c55e", "#a855f7",
-  "#f97316", "#06b6d4", "#ec4899", "#84cc16",
+  "#ef4444",
+  "#3b82f6",
+  "#22c55e",
+  "#a855f7",
+  "#f97316",
+  "#06b6d4",
+  "#ec4899",
+  "#84cc16",
 ];
 
 export function GroupingPhase({
@@ -90,7 +106,13 @@ export function GroupingPhase({
     if (hasScattered) return;
     const hasPositions = Object.keys(safePositions).length > 0;
     if (!hasPositions && cards.length > 0) {
-      const positions = scatterCardPositions(cards, CANVAS_WIDTH, canvasHeight, CARD_WIDTH, CARD_HEIGHT);
+      const positions = scatterCardPositions(
+        cards,
+        CANVAS_WIDTH,
+        canvasHeight,
+        CARD_WIDTH,
+        CARD_HEIGHT,
+      );
       onScatterCards(positions);
       setHasScattered(true);
     } else if (hasPositions) {
@@ -111,12 +133,18 @@ export function GroupingPhase({
 
       // If dragging, move the card
       if (dragging) {
-        const newX = Math.max(0, Math.min(CANVAS_WIDTH - CARD_WIDTH, x - dragging.offsetX));
-        const newY = Math.max(0, Math.min(canvasHeight - CARD_HEIGHT, y - dragging.offsetY));
+        const newX = Math.max(
+          0,
+          Math.min(CANVAS_WIDTH - CARD_WIDTH, x - dragging.offsetX),
+        );
+        const newY = Math.max(
+          0,
+          Math.min(canvasHeight - CARD_HEIGHT, y - dragging.offsetY),
+        );
         onMoveCard(dragging.cardId, newX, newY);
       }
     },
-    [onSendCursor, onMoveCard, dragging, canvasHeight]
+    [onSendCursor, onMoveCard, dragging, canvasHeight],
   );
 
   const handlePointerDown = useCallback(
@@ -136,7 +164,7 @@ export function GroupingPhase({
       });
       (e.target as HTMLElement).setPointerCapture(e.pointerId);
     },
-    [cardPositions, canvasHeight]
+    [cardPositions, canvasHeight],
   );
 
   const handlePointerUp = useCallback(() => {
@@ -144,17 +172,31 @@ export function GroupingPhase({
   }, []);
 
   // Group cluster boundaries for visual feedback
-  const groupBounds = groups.map((group) => {
-    const positions = group.cardIds
-      .map((id) => safePositions[id])
-      .filter(Boolean);
-    if (positions.length === 0) return null;
-    const minX = Math.min(...positions.map((p) => p.x)) - 12;
-    const minY = Math.min(...positions.map((p) => p.y)) - 12;
-    const maxX = Math.max(...positions.map((p) => p.x)) + CARD_WIDTH + 12;
-    const maxY = Math.max(...positions.map((p) => p.y)) + CARD_HEIGHT + 12;
-    return { group, x: minX, y: minY, width: maxX - minX, height: maxY - minY };
-  }).filter(Boolean) as Array<{ group: CardGroup; x: number; y: number; width: number; height: number }>;
+  const groupBounds = groups
+    .map((group) => {
+      const positions = group.cardIds
+        .map((id) => safePositions[id])
+        .filter(Boolean);
+      if (positions.length === 0) return null;
+      const minX = Math.min(...positions.map((p) => p.x)) - 12;
+      const minY = Math.min(...positions.map((p) => p.y)) - 12;
+      const maxX = Math.max(...positions.map((p) => p.x)) + CARD_WIDTH + 12;
+      const maxY = Math.max(...positions.map((p) => p.y)) + CARD_HEIGHT + 12;
+      return {
+        group,
+        x: minX,
+        y: minY,
+        width: maxX - minX,
+        height: maxY - minY,
+      };
+    })
+    .filter(Boolean) as Array<{
+    group: CardGroup;
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  }>;
 
   return (
     <div className="space-y-4">
@@ -165,7 +207,8 @@ export function GroupingPhase({
             Group & Label
           </h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            Drag cards close together to form groups. Everyone moves cards in real-time.
+            Drag cards close together to form groups. Everyone moves cards in
+            real-time.
           </p>
         </div>
         {isFacilitator && (
@@ -191,25 +234,26 @@ export function GroupingPhase({
         <div
           className="pointer-events-none absolute inset-0 opacity-[0.06]"
           style={{
-            backgroundImage: "radial-gradient(circle, currentColor 1px, transparent 1px)",
+            backgroundImage:
+              "radial-gradient(circle, currentColor 1px, transparent 1px)",
             backgroundSize: "20px 20px",
           }}
         />
 
         {/* Group boundaries (auto-generated from proximity) */}
         {groupBounds.map((bounds) => (
-            <GroupBoundary
-              key={bounds.group.id}
-              group={bounds.group}
-              x={bounds.x}
-              y={bounds.y}
-              width={bounds.width}
-              height={bounds.height}
-              canvasWidth={CANVAS_WIDTH}
-              canvasHeight={canvasHeight}
-              onRename={onRenameGroup}
-            />
-          ))}
+          <GroupBoundary
+            key={bounds.group.id}
+            group={bounds.group}
+            x={bounds.x}
+            y={bounds.y}
+            width={bounds.width}
+            height={bounds.height}
+            canvasWidth={CANVAS_WIDTH}
+            canvasHeight={canvasHeight}
+            onRename={onRenameGroup}
+          />
+        ))}
 
         {/* Cards */}
         {cards.map((card) => {
@@ -226,18 +270,22 @@ export function GroupingPhase({
                 "absolute flex items-start gap-2 rounded-md border-2 p-2.5 text-xs font-medium select-none transition-shadow",
                 style.border,
                 style.bg,
-                isDragging ? "shadow-hard-lg z-30 scale-105 cursor-grabbing" : "shadow-hard-sm z-10 cursor-grab hover:shadow-hard"
+                isDragging
+                  ? "shadow-hard-lg z-30 scale-105 cursor-grabbing"
+                  : "shadow-hard-sm z-10 cursor-grab hover:shadow-hard",
               )}
               style={{
                 left: `${(pos.x / CANVAS_WIDTH) * 100}%`,
                 top: `${(pos.y / canvasHeight) * 100}%`,
                 width: `${(CARD_WIDTH / CANVAS_WIDTH) * 100}%`,
                 minHeight: `${(CARD_HEIGHT / canvasHeight) * 100}%`,
-                transition: isDragging ? "none" : "box-shadow 0.15s, transform 0.15s",
+                transition: isDragging
+                  ? "none"
+                  : "box-shadow 0.15s, transform 0.15s",
               }}
               onPointerDown={(e) => handlePointerDown(card.id, e)}
             >
-              <Icon size={20} className={cn("shrink-0 mt-0.5", style.color)} />
+              <Icon size={24} className={cn("shrink-0 mt-0.5", style.color)} />
               <span className="leading-snug">{card.text}</span>
             </div>
           );
@@ -258,7 +306,13 @@ export function GroupingPhase({
               }}
             >
               {/* Cursor arrow */}
-              <svg width="16" height="20" viewBox="0 0 16 20" fill={color} className="drop-shadow-sm">
+              <svg
+                width="16"
+                height="20"
+                viewBox="0 0 16 20"
+                fill={color}
+                className="drop-shadow-sm"
+              >
                 <path d="M0 0 L16 12 L8 12 L12 20 L8 18 L4 12 L0 16 Z" />
               </svg>
               {/* Name label */}
@@ -280,11 +334,7 @@ export function GroupingPhase({
             {groups.length} group{groups.length !== 1 ? "s" : ""} formed:
           </span>
           {groups.map((g) => (
-            <RenameableChip
-              key={g.id}
-              group={g}
-              onRename={onRenameGroup}
-            />
+            <RenameableChip key={g.id} group={g} onRename={onRenameGroup} />
           ))}
         </div>
       )}
@@ -326,7 +376,10 @@ function RenameableChip({
         onBlur={handleSave}
         onKeyDown={(e) => {
           if (e.key === "Enter") handleSave();
-          if (e.key === "Escape") { setLabel(group.label); setEditing(false); }
+          if (e.key === "Escape") {
+            setLabel(group.label);
+            setEditing(false);
+          }
         }}
         autoFocus
         className="h-7 rounded-md border-2 border-primary bg-card px-2 text-xs font-bold focus:outline-none"
@@ -342,7 +395,11 @@ function RenameableChip({
       title="Click to rename group"
     >
       {group.label} ({group.cardIds.length})
-      <EditPencil width={10} height={10} className="shrink-0 text-muted-foreground" />
+      <EditPencil
+        width={10}
+        height={10}
+        className="shrink-0 text-muted-foreground"
+      />
     </button>
   );
 }
@@ -423,4 +480,3 @@ function GroupBoundary({
     </div>
   );
 }
-

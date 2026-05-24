@@ -119,8 +119,8 @@ export function WritingPhase({
           Write your thoughts anonymously. No one can see who wrote what.
         </p>
         <p className="mt-1 font-mono text-xs text-muted-foreground/60">
-          {totalCards} card{totalCards !== 1 ? "s" : ""} from{" "}
-          {participantCount} participant{participantCount !== 1 ? "s" : ""}
+          {totalCards} card{totalCards !== 1 ? "s" : ""} from {participantCount}{" "}
+          participant{participantCount !== 1 ? "s" : ""}
         </p>
       </div>
 
@@ -136,10 +136,13 @@ export function WritingPhase({
                 "flex items-center gap-2 rounded-md border-2 px-5 py-3 text-sm font-bold transition-all",
                 activeCategory === cat.value
                   ? `${cat.borderClass} ${cat.bgClass} ${cat.colorClass} shadow-hard-sm`
-                  : "border-border bg-card text-muted-foreground hover:text-foreground"
+                  : "border-border bg-card text-muted-foreground hover:text-foreground",
               )}
             >
-              <Icon size={24} className={activeCategory === cat.value ? cat.colorClass : ""} />
+              <Icon
+                size={32}
+                className={activeCategory === cat.value ? cat.colorClass : ""}
+              />
               {cat.label}
             </button>
           );
@@ -162,7 +165,7 @@ export function WritingPhase({
           className={cn(
             "w-full resize-none rounded-md border-2 bg-card p-4 text-sm font-medium shadow-hard-sm placeholder:text-muted-foreground/50 focus:outline-none",
             activeCat.borderClass,
-            `focus:${activeCat.borderClass}`
+            `focus:${activeCat.borderClass}`,
           )}
         />
 
@@ -207,10 +210,13 @@ export function WritingPhase({
                   className={cn(
                     "group flex items-start gap-3 rounded-md border-2 p-3",
                     cat.borderClass,
-                    cat.bgClass
+                    cat.bgClass,
                   )}
                 >
-                  <Icon size={20} className={cn("mt-0.5 shrink-0", cat.colorClass)} />
+                  <Icon
+                    size={24}
+                    className={cn("mt-0.5 shrink-0", cat.colorClass)}
+                  />
                   {isEditing ? (
                     <div className="flex flex-1 items-start gap-2">
                       <textarea
@@ -301,7 +307,7 @@ export function WritingPhase({
                     className={cn(
                       "rounded-md border-2 p-2.5 text-xs",
                       cat.borderClass,
-                      cat.bgClass
+                      cat.bgClass,
                     )}
                   >
                     {card.text}
@@ -316,7 +322,11 @@ export function WritingPhase({
       {/* Facilitator advance */}
       {isFacilitator && (
         <div className="text-center pt-4">
-          <Button onClick={onAdvance} disabled={totalCards === 0} className="h-11">
+          <Button
+            onClick={onAdvance}
+            disabled={totalCards === 0}
+            className="h-11"
+          >
             {totalCards === 0 ? "Waiting for cards..." : "Move to grouping"}
           </Button>
         </div>
