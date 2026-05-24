@@ -190,9 +190,18 @@ export default async function DashboardPage({
                       <span className="truncate text-foreground/70">
                         {r.ticketRef}
                       </span>
-                      <span className="flex h-7 min-w-7 shrink-0 items-center justify-center rounded bg-primary/15 px-1 font-mono text-xs font-bold text-primary">
-                        {formatEstimate(r.finalEstimate)}
-                      </span>
+                      {isEmojiEstimate(r.finalEstimate) ? (
+                        <span
+                          className="shrink-0 text-base leading-none"
+                          title={r.finalEstimate}
+                        >
+                          {formatEstimate(r.finalEstimate)}
+                        </span>
+                      ) : (
+                        <span className="flex h-7 min-w-7 shrink-0 items-center justify-center rounded bg-primary/15 px-1 font-mono text-xs font-bold text-primary">
+                          {r.finalEstimate}
+                        </span>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -390,4 +399,8 @@ function formatEstimate(value: string): string {
   if (value === "coffee") return "☕";
   if (value === "question") return "❓";
   return value;
+}
+
+function isEmojiEstimate(value: string): boolean {
+  return value === "coffee" || value === "question";
 }
