@@ -13,18 +13,37 @@ import { SessionHistory } from "@/components/estimation/session-history";
 import { ThemeToggle } from "@/components/shared/theme-toggle";
 import { useEstimationRoom } from "@/hooks/use-estimation-room";
 import { useConfetti } from "@/hooks/use-confetti";
-import { getVoteSpread, type CardValue, type CompletedEstimate } from "@/lib/state-machines/estimation";
+import {
+  getVoteSpread,
+  type CardValue,
+  type CompletedEstimate,
+} from "@/lib/state-machines/estimation";
 import { cn } from "@/lib/utils";
 import { OwlIcon } from "@/components/shared/icons";
 import { ConnectionStatus } from "@/components/shared/connection-status";
 import { TicketInput } from "@/components/estimation/ticket-input";
 import Link from "next/link";
 import { useAuth } from "@clerk/nextjs";
-import { NavArrowLeft, LogOut, Copy, Check, FloppyDisk, Download } from "iconoir-react";
+import {
+  NavArrowLeft,
+  LogOut,
+  Copy,
+  Check,
+  FloppyDisk,
+  Download,
+} from "iconoir-react";
 import { generateCSV, downloadCSV } from "@/lib/csv";
 
 const CARD_SORT_ORDER: Record<string, number> = {
-  "13": 13, "8": 8, "5": 5, "4": 4, "3": 3, "2": 2, "1": 1, coffee: 0, question: -1,
+  "13": 13,
+  "8": 8,
+  "5": 5,
+  "4": 4,
+  "3": 3,
+  "2": 2,
+  "1": 1,
+  coffee: 0,
+  question: -1,
 };
 
 export default function EstimationRoomPage({
@@ -80,7 +99,12 @@ export default function EstimationRoomPage({
         setPlayerName("");
       }}
       onEndSession={(history, participants, autoSaved) => {
-        setSessionSummary({ history, participants, playerName, autoSaveTriggered: autoSaved });
+        setSessionSummary({
+          history,
+          participants,
+          playerName,
+          autoSaveTriggered: autoSaved,
+        });
       }}
     />
   );
@@ -157,7 +181,11 @@ function EstimationRoom({
   playerName: string;
   teamId?: string;
   onLeave: () => void;
-  onEndSession: (history: ReadonlyArray<CompletedEstimate>, participants: number, autoSaveTriggered: boolean) => void;
+  onEndSession: (
+    history: ReadonlyArray<CompletedEstimate>,
+    participants: number,
+    autoSaveTriggered: boolean,
+  ) => void;
 }) {
   const { userId: clerkUserId } = useAuth();
 
@@ -230,7 +258,7 @@ function EstimationRoom({
       setSelectedCard(value);
       vote(value);
     },
-    [vote]
+    [vote],
   );
 
   const handleLoadTicket = useCallback(
@@ -238,7 +266,7 @@ function EstimationRoom({
       loadTicket(ref, title, url);
       setSelectedCard(null);
     },
-    [loadTicket]
+    [loadTicket],
   );
 
   const handleNextTicket = useCallback(() => {
@@ -319,12 +347,13 @@ function EstimationRoom({
           </div>
           <div className="mt-1 flex items-center gap-2">
             <span className="text-xs font-bold text-muted-foreground">
-              {state.participants.length} player{state.participants.length !== 1 ? "s" : ""}
+              {state.participants.length} player
+              {state.participants.length !== 1 ? "s" : ""}
             </span>
             <span
               className={cn(
                 "inline-block h-2 w-2 rounded-full",
-                connected ? "bg-success" : "bg-destructive animate-pulse"
+                connected ? "bg-success" : "bg-destructive animate-pulse",
               )}
             />
             {isFacilitator && (
@@ -376,7 +405,9 @@ function EstimationRoom({
       {/* Waiting for facilitator */}
       {state.phase === "waiting" && !isFacilitator && (
         <div className="stagger-in rounded-md border-2 border-dashed border-border p-8 text-center">
-          <div className="text-muted-foreground"><OwlIcon size={48} /></div>
+          <div className="text-muted-foreground">
+            <OwlIcon size={48} />
+          </div>
           <p className="mt-3 text-sm font-bold tracking-wide text-muted-foreground">
             Waiting for facilitator...
           </p>
@@ -388,9 +419,35 @@ function EstimationRoom({
         <div className="space-y-8">
           {/* Current ticket */}
           <div className="text-center">
-            <span className="rounded-md bg-muted px-3 py-1 font-mono text-xs font-bold uppercase tracking-widest text-muted-foreground">
-              {state.ticket.ref}
-            </span>
+            {state.ticket.url ? (
+              <a
+                href={state.ticket.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 rounded-md bg-muted px-3 py-1 font-mono text-xs font-bold uppercase tracking-widest text-muted-foreground transition-colors hover:text-primary"
+              >
+                {state.ticket.ref}
+                <svg
+                  width="10"
+                  height="10"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
+                  <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+                  <polyline points="15 3 21 3 21 9" />
+                  <line x1="10" y1="14" x2="21" y2="3" />
+                </svg>
+              </a>
+            ) : (
+              <span className="rounded-md bg-muted px-3 py-1 font-mono text-xs font-bold uppercase tracking-widest text-muted-foreground">
+                {state.ticket.ref}
+              </span>
+            )}
             {state.ticket.title !== state.ticket.ref && (
               <h2 className="mt-3 font-display text-xl font-bold tracking-ceremony">
                 {state.ticket.title}
@@ -404,8 +461,10 @@ function EstimationRoom({
               ? [...state.participants].sort((a, b) => {
                   const aVote = state.votes.find((v) => v.odiedId === a.id);
                   const bVote = state.votes.find((v) => v.odiedId === b.id);
-                  const aVal = aVote != null ? (CARD_SORT_ORDER[aVote.value] ?? -2) : -99;
-                  const bVal = bVote != null ? (CARD_SORT_ORDER[bVote.value] ?? -2) : -99;
+                  const aVal =
+                    aVote != null ? (CARD_SORT_ORDER[aVote.value] ?? -2) : -99;
+                  const bVal =
+                    bVote != null ? (CARD_SORT_ORDER[bVote.value] ?? -2) : -99;
                   return bVal - aVal;
                 })
               : state.participants
@@ -517,8 +576,15 @@ function EstimationRoom({
 // ── Session Summary Screen (Level 2) ──
 
 const VALUE_DISPLAY: Record<CardValue, string> = {
-  coffee: "☕", "1": "1", "2": "2", "3": "3", "4": "4",
-  "5": "5", "8": "8", "13": "13", question: "❓",
+  coffee: "☕",
+  "1": "1",
+  "2": "2",
+  "3": "3",
+  "4": "4",
+  "5": "5",
+  "8": "8",
+  "13": "13",
+  question: "❓",
 };
 
 type SaveStatus = "idle" | "saving" | "saved" | "error";
@@ -543,7 +609,7 @@ function SessionSummaryScreen({
   const { isSignedIn, userId: clerkUserId } = useAuth();
   const [copied, setCopied] = useState(false);
   const [saveStatus, setSaveStatus] = useState<SaveStatus>(
-    autoSaveTriggered ? "saving" : "idle"
+    autoSaveTriggered ? "saving" : "idle",
   );
 
   // Poll once to confirm auto-save completed
@@ -552,10 +618,10 @@ function SessionSummaryScreen({
     const timer = setTimeout(async () => {
       try {
         const res = await fetch(
-          `/api/estimation/check?roomCode=${encodeURIComponent(roomId)}`
+          `/api/estimation/check?roomCode=${encodeURIComponent(roomId)}`,
         );
         if (res.ok) {
-          const data = await res.json() as { found: boolean };
+          const data = (await res.json()) as { found: boolean };
           setSaveStatus(data.found ? "saved" : "error");
         } else {
           setSaveStatus("error");
@@ -583,7 +649,7 @@ function SessionSummaryScreen({
     ``,
     ...summary.history.map(
       (h, i) =>
-        `${i + 1}. ${h.ticket.ref === "Quick vote" ? `Quick vote #${i + 1}` : h.ticket.ref} → ${VALUE_DISPLAY[h.finalEstimate]}`
+        `${i + 1}. ${h.ticket.ref === "Quick vote" ? `Quick vote #${i + 1}` : h.ticket.ref} → ${VALUE_DISPLAY[h.finalEstimate]}`,
     ),
   ].join("\n");
 
@@ -603,7 +669,7 @@ function SessionSummaryScreen({
         VALUE_DISPLAY[h.finalEstimate],
         String(h.participantCount),
         new Date(h.completedAt).toISOString(),
-      ])
+      ]),
     );
     downloadCSV(csv, `estimation-${roomId}.csv`);
   }, [summary.history, roomId]);
@@ -633,7 +699,11 @@ function SessionSummaryScreen({
       });
 
       if (!res.ok) {
-        const body = await res.json().catch(() => ({ error: `HTTP ${res.status}` })) as { error?: string };
+        const body = (await res
+          .json()
+          .catch(() => ({ error: `HTTP ${res.status}` }))) as {
+          error?: string;
+        };
         throw new Error(body.error ?? `HTTP ${res.status}`);
       }
       setSaveStatus("saved");
@@ -667,7 +737,9 @@ function SessionSummaryScreen({
             </p>
           </div>
           <div className="rounded-md bg-muted px-4 py-3 text-center">
-            <p className="font-mono text-2xl font-bold">{summary.participants}</p>
+            <p className="font-mono text-2xl font-bold">
+              {summary.participants}
+            </p>
             <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
               players
             </p>
@@ -695,11 +767,10 @@ function SessionSummaryScreen({
             )}
             {saveStatus === "saved" && (
               <div className="space-y-1">
-                <p className="text-sm font-bold text-primary">
-                  Saved!
-                </p>
+                <p className="text-sm font-bold text-primary">Saved!</p>
                 <p className="text-xs text-muted-foreground">
-                  This session is now part of your history. The Haunting remembers.
+                  This session is now part of your history. The Haunting
+                  remembers.
                 </p>
               </div>
             )}
@@ -712,7 +783,12 @@ function SessionSummaryScreen({
                   <p className="text-xs text-destructive/70">{saveError}</p>
                 )}
                 {isSignedIn ? (
-                  <Button onClick={handleSave} variant="outline" size="sm" className="border-destructive/40 text-destructive hover:bg-destructive/10">
+                  <Button
+                    onClick={handleSave}
+                    variant="outline"
+                    size="sm"
+                    className="border-destructive/40 text-destructive hover:bg-destructive/10"
+                  >
                     <FloppyDisk width={16} height={16} />
                     Save manually
                   </Button>
@@ -730,14 +806,19 @@ function SessionSummaryScreen({
                     <p className="text-sm font-bold text-primary/80">
                       Save this session?
                     </p>
-                    <Button onClick={handleSave} variant="outline" className="mt-2 w-full border-primary/40 text-primary hover:bg-primary/10">
+                    <Button
+                      onClick={handleSave}
+                      variant="outline"
+                      className="mt-2 w-full border-primary/40 text-primary hover:bg-primary/10"
+                    >
                       <FloppyDisk width={16} height={16} />
                       Save session
                     </Button>
                   </>
                 ) : (
                   <p className="text-xs text-muted-foreground/70">
-                    Session not saved. Copy or download below to keep your estimates.
+                    Session not saved. Copy or download below to keep your
+                    estimates.
                   </p>
                 )}
               </div>
@@ -782,7 +863,15 @@ function SessionSummaryScreen({
 // ── Estimate Results with Sort ──
 
 const ESTIMATE_ORDER: Record<string, number> = {
-  "1": 1, "2": 2, "3": 3, "4": 4, "5": 5, "8": 8, "13": 13, coffee: 0, question: -1,
+  "1": 1,
+  "2": 2,
+  "3": 3,
+  "4": 4,
+  "5": 5,
+  "8": 8,
+  "13": 13,
+  coffee: 0,
+  question: -1,
 };
 
 type SortMode = "chronological" | "highest" | "lowest";
@@ -819,7 +908,11 @@ function EstimateResultsList({
                   : "text-muted-foreground hover:text-foreground"
               }`}
             >
-              {mode === "highest" ? "High→Low" : mode === "lowest" ? "Low→High" : "Order"}
+              {mode === "highest"
+                ? "High→Low"
+                : mode === "lowest"
+                  ? "Low→High"
+                  : "Order"}
             </button>
           ))}
         </div>

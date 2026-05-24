@@ -1,7 +1,14 @@
 import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import { getDb } from "@/lib/db";
-import { teams, teamMembers, retros, actionItems, estimationSessions, estimationResults } from "@/lib/db/schema";
+import {
+  teams,
+  teamMembers,
+  retros,
+  actionItems,
+  estimationSessions,
+  estimationResults,
+} from "@/lib/db/schema";
 import { eq, desc, or, and, isNull } from "drizzle-orm";
 import Link from "next/link";
 import { GhostIcon, OwlIcon } from "@/components/shared/icons";
@@ -39,7 +46,7 @@ export default async function DashboardPage({
   }
 
   const validatedActiveTeamId =
-    activeTeamId && userTeams.some(t => t.id === activeTeamId)
+    activeTeamId && userTeams.some((t) => t.id === activeTeamId)
       ? activeTeamId
       : undefined;
   const currentTeamId = validatedActiveTeamId ?? userTeams[0]?.id;
@@ -100,7 +107,9 @@ export default async function DashboardPage({
           >
             <GhostIcon size={28} className="text-coffee" />
             <p className="mt-2 text-sm font-bold">New retro</p>
-            <p className="text-xs text-muted-foreground">Start a retrospective</p>
+            <p className="text-xs text-muted-foreground">
+              Start a retrospective
+            </p>
           </Link>
           <Link
             href={`/estimation/${generateRoomCode()}${currentTeamId ? `?team=${currentTeamId}` : ""}`}
@@ -108,7 +117,9 @@ export default async function DashboardPage({
           >
             <OwlIcon size={28} className="text-primary" />
             <p className="mt-2 text-sm font-bold">New estimation</p>
-            <p className="text-xs text-muted-foreground">Start an estimation session</p>
+            <p className="text-xs text-muted-foreground">
+              Start an estimation session
+            </p>
           </Link>
         </div>
 
@@ -129,17 +140,15 @@ export default async function DashboardPage({
             </div>
           )}
 
-          {pastEstimations.map((session) => (
+          {pastEstimations.map((session, i) => (
             <div
               key={session.id}
-              className="rounded-md border-2 border-border bg-card p-4 shadow-hard-sm"
+              className="stagger-in rounded-md border-2 border-border bg-card p-4 shadow-hard-sm"
+              style={{ animationDelay: `${i * 60}ms` }}
             >
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-bold">
-                    Session {session.roomCode}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="font-display text-base font-bold">
                     {session.closedAt
                       ? new Date(session.closedAt).toLocaleDateString("en-US", {
                           month: "short",
@@ -148,16 +157,23 @@ export default async function DashboardPage({
                         })
                       : "In progress"}
                   </p>
+                  <p className="mt-0.5 font-mono text-xs text-muted-foreground">
+                    {session.roomCode}
+                  </p>
                 </div>
                 <div className="flex gap-3 text-center">
                   <div>
-                    <p className="font-mono text-lg font-bold">{session.results.length}</p>
+                    <p className="font-mono text-lg font-bold">
+                      {session.results.length}
+                    </p>
                     <p className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground">
                       tickets
                     </p>
                   </div>
                   <div>
-                    <p className="font-mono text-lg font-bold">{session.participantCount}</p>
+                    <p className="font-mono text-lg font-bold">
+                      {session.participantCount}
+                    </p>
                     <p className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground">
                       players
                     </p>
@@ -171,9 +187,11 @@ export default async function DashboardPage({
                       key={r.id}
                       className="flex items-center justify-between text-xs"
                     >
-                      <span className="truncate text-muted-foreground">{r.ticketRef}</span>
+                      <span className="truncate text-muted-foreground">
+                        {r.ticketRef}
+                      </span>
                       <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded bg-primary/15 font-mono text-[10px] font-bold text-primary">
-                        {r.finalEstimate}
+                        {formatEstimate(r.finalEstimate)}
                       </span>
                     </div>
                   ))}
@@ -188,7 +206,8 @@ export default async function DashboardPage({
               Claim a past session
             </p>
             <p className="text-xs text-muted-foreground">
-              Ran a session without signing in? Enter the room code to add it to your history.
+              Ran a session without signing in? Enter the room code to add it to
+              your history.
             </p>
             <ClaimSession />
           </div>
@@ -202,25 +221,26 @@ export default async function DashboardPage({
 
           {pastRetros.length === 0 && (
             <div className="rounded-md border-2 border-dashed border-border p-8 text-center">
-              <GhostIcon size={40} className="mx-auto text-muted-foreground/30" />
+              <GhostIcon
+                size={40}
+                className="mx-auto text-muted-foreground/30"
+              />
               <p className="mt-3 text-sm text-muted-foreground">
                 No retros yet. Start one above!
               </p>
             </div>
           )}
 
-          {pastRetros.map((retro) => (
+          {pastRetros.map((retro, i) => (
             <Link
               key={retro.id}
               href={`/retro/${retro.roomCode}`}
-              className="block rounded-md border-2 border-border bg-card p-4 shadow-hard-sm transition-all hover:border-primary hover:shadow-hard"
+              className="stagger-in block rounded-md border-2 border-border bg-card p-4 shadow-hard-sm transition-all hover:border-primary hover:shadow-hard"
+              style={{ animationDelay: `${i * 60}ms` }}
             >
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-bold">
-                    Retro {retro.roomCode}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="font-display text-base font-bold">
                     {retro.closedAt
                       ? new Date(retro.closedAt).toLocaleDateString("en-US", {
                           month: "short",
@@ -229,16 +249,23 @@ export default async function DashboardPage({
                         })
                       : "In progress"}
                   </p>
+                  <p className="mt-0.5 font-mono text-xs text-muted-foreground">
+                    {retro.roomCode}
+                  </p>
                 </div>
                 <div className="flex gap-3 text-center">
                   <div>
-                    <p className="font-mono text-lg font-bold">{retro.cardCount}</p>
+                    <p className="font-mono text-lg font-bold">
+                      {retro.cardCount}
+                    </p>
                     <p className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground">
                       cards
                     </p>
                   </div>
                   <div>
-                    <p className="font-mono text-lg font-bold">{retro.actionCount}</p>
+                    <p className="font-mono text-lg font-bold">
+                      {retro.actionCount}
+                    </p>
                     <p className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground">
                       actions
                     </p>
@@ -280,7 +307,8 @@ export default async function DashboardPage({
               Claim a past retro
             </p>
             <p className="text-xs text-muted-foreground">
-              Ran a retro without signing in? Enter the room code to add it to your history.
+              Ran a retro without signing in? Enter the room code to add it to
+              your history.
             </p>
             <ClaimRetro />
           </div>
@@ -313,7 +341,7 @@ async function fetchRetros(userId: string, teamId?: string) {
         .from(actionItems)
         .where(eq(actionItems.retroId, retro.id));
       return { ...retro, actions };
-    })
+    }),
   );
 
   return result;
@@ -327,7 +355,10 @@ async function fetchEstimations(userId: string, teamId?: string) {
   const whereClause = teamId
     ? or(
         eq(estimationSessions.teamId, teamId),
-        and(eq(estimationSessions.createdBy, userId), isNull(estimationSessions.teamId))
+        and(
+          eq(estimationSessions.createdBy, userId),
+          isNull(estimationSessions.teamId),
+        ),
       )
     : eq(estimationSessions.createdBy, userId);
 
@@ -345,7 +376,7 @@ async function fetchEstimations(userId: string, teamId?: string) {
         .from(estimationResults)
         .where(eq(estimationResults.sessionId, session.id));
       return { ...session, results };
-    })
+    }),
   );
 
   return result;
@@ -353,4 +384,10 @@ async function fetchEstimations(userId: string, teamId?: string) {
 
 function generateRoomCode(): string {
   return Math.random().toString(36).slice(2, 8);
+}
+
+function formatEstimate(value: string): string {
+  if (value === "coffee") return "☕";
+  if (value === "question") return "❓";
+  return value;
 }
