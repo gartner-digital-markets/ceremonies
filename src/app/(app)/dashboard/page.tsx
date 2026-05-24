@@ -185,12 +185,12 @@ export default async function DashboardPage({
                   {session.results.map((r) => (
                     <div
                       key={r.id}
-                      className="flex items-center justify-between text-xs"
+                      className="flex items-center justify-between text-sm"
                     >
-                      <span className="truncate text-muted-foreground">
+                      <span className="truncate text-foreground/70">
                         {r.ticketRef}
                       </span>
-                      <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded bg-primary/15 font-mono text-[10px] font-bold text-primary">
+                      <span className="flex h-7 min-w-7 shrink-0 items-center justify-center rounded bg-primary/15 px-1 font-mono text-xs font-bold text-primary">
                         {formatEstimate(r.finalEstimate)}
                       </span>
                     </div>
