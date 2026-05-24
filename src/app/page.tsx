@@ -242,7 +242,7 @@ export default function Home() {
       </section>
 
       {/* Footer */}
-      <footer className="relative border-t-2 border-border px-6 py-8 md:px-12">
+      <footer className="relative border-t border-border/20 px-6 py-8 md:px-12">
         <div className="mx-auto max-w-3xl space-y-5">
           {/* Row 1: logo + attribution */}
           <div className="flex items-center justify-between">
