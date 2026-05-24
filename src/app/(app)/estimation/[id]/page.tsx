@@ -22,6 +22,7 @@ import { cn } from "@/lib/utils";
 import { OwlIcon } from "@/components/shared/icons";
 import { HalftoneBlob } from "@/components/shared/halftone-blob";
 import { ConnectionStatus } from "@/components/shared/connection-status";
+import { TransferFacilitationDialog } from "@/components/shared/transfer-facilitation-dialog";
 import { TicketInput } from "@/components/estimation/ticket-input";
 import Link from "next/link";
 import { useAuth } from "@clerk/nextjs";
@@ -214,6 +215,7 @@ function EstimationRoom({
     saveSession,
     saveResult,
     noEstimate,
+    transferFacilitation,
   } = useEstimationRoom({ roomId, playerName, clerkUserId });
 
   const { fire: fireConfetti, reset: resetConfetti } = useConfetti();
@@ -372,9 +374,17 @@ function EstimationRoom({
               )}
             />
             {isFacilitator && (
-              <span className="rounded-md bg-primary/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest text-primary">
-                Facilitator
-              </span>
+              <>
+                <span className="rounded-md bg-primary/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest text-primary">
+                  Facilitator
+                </span>
+                <TransferFacilitationDialog
+                  participants={state.participants}
+                  myId={myId ?? ""}
+                  onTransfer={transferFacilitation}
+                  accent="primary"
+                />
+              </>
             )}
           </div>
         </div>

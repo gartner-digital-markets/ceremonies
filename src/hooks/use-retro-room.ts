@@ -33,7 +33,11 @@ interface UseRetroRoomResult {
   readonly stopTyping: () => void;
 
   // Lobby
-  readonly startRetro: (options?: { teamId?: string; createdBy?: string; previousActions?: ReadonlyArray<PreviousAction> }) => void;
+  readonly startRetro: (options?: {
+    teamId?: string;
+    createdBy?: string;
+    previousActions?: ReadonlyArray<PreviousAction>;
+  }) => void;
 
   // Haunting
   readonly markAction: (actionId: string, done: boolean) => void;
@@ -51,7 +55,10 @@ interface UseRetroRoomResult {
   readonly scatterCards: (positions: Record<string, CardPosition>) => void;
   readonly sendCursor: (x: number, y: number) => void;
   readonly cursors: ReadonlyMap<string, CursorPosition>;
-  readonly createGroup: (label: string, cardIds?: ReadonlyArray<string>) => void;
+  readonly createGroup: (
+    label: string,
+    cardIds?: ReadonlyArray<string>,
+  ) => void;
   readonly renameGroup: (groupId: string, label: string) => void;
   readonly moveCardToGroup: (cardId: string, groupId: string) => void;
   readonly removeCardFromGroup: (cardId: string, groupId: string) => void;
@@ -67,12 +74,23 @@ interface UseRetroRoomResult {
   readonly nextTopic: () => void;
 
   // Committing
-  readonly addActionItem: (text: string, assignees: ReadonlyArray<string>, groupId?: string | null) => void;
+  readonly addActionItem: (
+    text: string,
+    assignees: ReadonlyArray<string>,
+    groupId?: string | null,
+  ) => void;
   readonly removeActionItem: (itemId: string) => void;
-  readonly updateActionItem: (itemId: string, text?: string, assignees?: ReadonlyArray<string>) => void;
+  readonly updateActionItem: (
+    itemId: string,
+    text?: string,
+    assignees?: ReadonlyArray<string>,
+  ) => void;
 
   // Close
   readonly closeRetro: () => void;
+
+  // Facilitation transfer
+  readonly transferFacilitation: (targetId: string) => void;
 
   /** True if the automatic DB save after closing failed. Show recovery UI. */
   readonly saveFailed: boolean;
@@ -91,8 +109,12 @@ export function useRetroRoom({
   const [myId, setMyId] = useState<string | null>(null);
   const [myAnonymousId, setMyAnonymousId] = useState<string | null>(null);
   const [connected, setConnected] = useState(false);
-  const [cursors, setCursors] = useState<ReadonlyMap<string, CursorPosition>>(new Map());
-  const [typingParticipantIds, setTypingParticipantIds] = useState<ReadonlyArray<string>>([]);
+  const [cursors, setCursors] = useState<ReadonlyMap<string, CursorPosition>>(
+    new Map(),
+  );
+  const [typingParticipantIds, setTypingParticipantIds] = useState<
+    ReadonlyArray<string>
+  >([]);
   const [saveFailed, setSaveFailed] = useState(false);
   const stateRef = useRef(state);
 
@@ -160,13 +182,17 @@ export function useRetroRoom({
     (event: Record<string, unknown>) => {
       socket.send(JSON.stringify(event));
     },
-    [socket]
+    [socket],
   );
 
   // ── Lobby ──
 
   const startRetro = useCallback(
-    (options?: { teamId?: string; createdBy?: string; previousActions?: ReadonlyArray<PreviousAction> }) => {
+    (options?: {
+      teamId?: string;
+      createdBy?: string;
+      previousActions?: ReadonlyArray<PreviousAction>;
+    }) => {
       send({
         type: "START_RETRO",
         facilitatorId: myId,
@@ -175,7 +201,7 @@ export function useRetroRoom({
         previousActions: options?.previousActions,
       });
     },
-    [send, myId]
+    [send, myId],
   );
 
   // ── Haunting ──
@@ -184,7 +210,7 @@ export function useRetroRoom({
     (actionId: string, done: boolean) => {
       send({ type: "MARK_ACTION", facilitatorId: myId, actionId, done });
     },
-    [send, myId]
+    [send, myId],
   );
 
   // ── Phase control ──
@@ -199,21 +225,21 @@ export function useRetroRoom({
     (category: CardCategory, text: string) => {
       send({ type: "ADD_CARD", category, text });
     },
-    [send]
+    [send],
   );
 
   const editCard = useCallback(
     (cardId: string, text: string) => {
       send({ type: "EDIT_CARD", cardId, text });
     },
-    [send]
+    [send],
   );
 
   const removeCard = useCallback(
     (cardId: string) => {
       send({ type: "REMOVE_CARD", cardId, anonymousId: myAnonymousId });
     },
-    [send, myAnonymousId]
+    [send, myAnonymousId],
   );
 
   const startTyping = useCallback(() => {
@@ -230,21 +256,21 @@ export function useRetroRoom({
     (cardId: string, x: number, y: number) => {
       send({ type: "MOVE_CARD_POSITION", cardId, x, y });
     },
-    [send]
+    [send],
   );
 
   const scatterCards = useCallback(
     (positions: Record<string, CardPosition>) => {
       send({ type: "SCATTER_CARDS", positions });
     },
-    [send]
+    [send],
   );
 
   const sendCursor = useCallback(
     (x: number, y: number) => {
       send({ type: "CURSOR_MOVE", x, y });
     },
-    [send]
+    [send],
   );
 
   const createGroup = useCallback(
@@ -259,28 +285,28 @@ export function useRetroRoom({
         },
       });
     },
-    [send]
+    [send],
   );
 
   const renameGroup = useCallback(
     (groupId: string, label: string) => {
       send({ type: "RENAME_GROUP", groupId, label });
     },
-    [send]
+    [send],
   );
 
   const moveCardToGroup = useCallback(
     (cardId: string, groupId: string) => {
       send({ type: "MOVE_CARD_TO_GROUP", cardId, groupId });
     },
-    [send]
+    [send],
   );
 
   const removeCardFromGroup = useCallback(
     (cardId: string, groupId: string) => {
       send({ type: "REMOVE_CARD_FROM_GROUP", cardId, groupId });
     },
-    [send]
+    [send],
   );
 
   // ── Voting ──
@@ -289,17 +315,18 @@ export function useRetroRoom({
     (groupId: string) => {
       send({ type: "CAST_VOTE", odiedId: myId, groupId });
     },
-    [send, myId]
+    [send, myId],
   );
 
   const removeVote = useCallback(
     (groupId: string) => {
       send({ type: "REMOVE_VOTE", odiedId: myId, groupId });
     },
-    [send, myId]
+    [send, myId],
   );
 
-  const myVoteCount = state?.votes.filter((v) => v.odiedId === myId).length ?? 0;
+  const myVoteCount =
+    state?.votes.filter((v) => v.odiedId === myId).length ?? 0;
 
   // ── Discussion ──
 
@@ -307,7 +334,7 @@ export function useRetroRoom({
     (seconds: number) => {
       send({ type: "SET_TIMER", facilitatorId: myId, seconds });
     },
-    [send, myId]
+    [send, myId],
   );
 
   const toggleTimer = useCallback(() => {
@@ -321,7 +348,11 @@ export function useRetroRoom({
   // ── Committing ──
 
   const addActionItem = useCallback(
-    (text: string, assignees: ReadonlyArray<string>, groupId?: string | null) => {
+    (
+      text: string,
+      assignees: ReadonlyArray<string>,
+      groupId?: string | null,
+    ) => {
       send({
         type: "ADD_ACTION_ITEM",
         item: {
@@ -333,21 +364,21 @@ export function useRetroRoom({
         },
       });
     },
-    [send]
+    [send],
   );
 
   const removeActionItem = useCallback(
     (itemId: string) => {
       send({ type: "REMOVE_ACTION_ITEM", facilitatorId: myId, itemId });
     },
-    [send, myId]
+    [send, myId],
   );
 
   const updateActionItem = useCallback(
     (itemId: string, text?: string, assignees?: ReadonlyArray<string>) => {
       send({ type: "UPDATE_ACTION_ITEM", itemId, text, assignees });
     },
-    [send]
+    [send],
   );
 
   // ── Close ──
@@ -355,6 +386,13 @@ export function useRetroRoom({
   const closeRetro = useCallback(() => {
     send({ type: "CLOSE_RETRO", facilitatorId: myId });
   }, [send, myId]);
+
+  const transferFacilitation = useCallback(
+    (targetId: string) => {
+      send({ type: "TRANSFER_FACILITATION", targetId, facilitatorId: myId });
+    },
+    [send, myId],
+  );
 
   const isFacilitator = Boolean(myId && state && state.facilitatorId === myId);
 
@@ -393,6 +431,7 @@ export function useRetroRoom({
     addActionItem,
     removeActionItem,
     updateActionItem,
+    transferFacilitation,
     closeRetro,
     saveFailed,
   };

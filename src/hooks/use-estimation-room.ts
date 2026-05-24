@@ -35,6 +35,7 @@ interface UseEstimationRoomResult {
   readonly noEstimate: () => void;
   readonly nudge: () => void;
   readonly saveSession: (teamId?: string) => void;
+  readonly transferFacilitation: (targetId: string) => void;
 }
 
 export function useEstimationRoom({
@@ -87,7 +88,7 @@ export function useEstimationRoom({
     (event: EstimationEvent) => {
       socket.send(JSON.stringify(event));
     },
-    [socket]
+    [socket],
   );
 
   const vote = useCallback(
@@ -99,7 +100,7 @@ export function useEstimationRoom({
         value,
       });
     },
-    [send, myId, playerName]
+    [send, myId, playerName],
   );
 
   const loadTicket = useCallback(
@@ -110,7 +111,7 @@ export function useEstimationRoom({
         facilitatorId: myId ?? "",
       });
     },
-    [send, myId]
+    [send, myId],
   );
 
   const reveal = useCallback(() => {
@@ -125,7 +126,7 @@ export function useEstimationRoom({
     (value: CardValue) => {
       send({ type: "AGREE", facilitatorId: myId ?? "", finalEstimate: value });
     },
-    [send, myId]
+    [send, myId],
   );
 
   const nextTicket = useCallback(() => {
@@ -154,15 +155,24 @@ export function useEstimationRoom({
           // Forward the Clerk userId so PartyKit can write a queryable createdBy.
           // Falls back to undefined (PartyKit will use its own participantId prefix).
           clerkUserId: clerkUserId ?? undefined,
-        })
+        }),
       );
     },
-    [socket, clerkUserId]
+    [socket, clerkUserId],
   );
 
-  const isFacilitator = Boolean(
-    myId && state && state.facilitatorId === myId
+  const transferFacilitation = useCallback(
+    (targetId: string) => {
+      send({
+        type: "TRANSFER_FACILITATION",
+        targetId,
+        facilitatorId: myId ?? "",
+      });
+    },
+    [send, myId],
   );
+
+  const isFacilitator = Boolean(myId && state && state.facilitatorId === myId);
 
   return {
     state,
@@ -181,5 +191,6 @@ export function useEstimationRoom({
     nudgeReceived,
     saveSession,
     saveResult,
+    transferFacilitation,
   };
 }

@@ -10,6 +10,7 @@ import { ThemeToggle } from "@/components/shared/theme-toggle";
 import { GhostIcon, OwlIcon } from "@/components/shared/icons";
 import { HalftoneBlob } from "@/components/shared/halftone-blob";
 import { ConnectionStatus } from "@/components/shared/connection-status";
+import { TransferFacilitationDialog } from "@/components/shared/transfer-facilitation-dialog";
 import { PhaseIndicator } from "@/components/retro/phase-indicator";
 import { HauntingPhase } from "@/components/retro/haunting-phase";
 import { WritingPhase } from "@/components/retro/writing-phase";
@@ -173,6 +174,7 @@ function RetroRoom({
     removeActionItem,
     updateActionItem,
     closeRetro,
+    transferFacilitation,
     typingOthers,
     startTyping,
     stopTyping,
@@ -256,9 +258,17 @@ function RetroRoom({
               )}
             />
             {isFacilitator && (
-              <span className="rounded-md bg-coffee/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest text-coffee">
-                Facilitator
-              </span>
+              <>
+                <span className="rounded-md bg-coffee/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest text-coffee">
+                  Facilitator
+                </span>
+                <TransferFacilitationDialog
+                  participants={state.participants}
+                  myId={myId ?? ""}
+                  onTransfer={transferFacilitation}
+                  accent="coffee"
+                />
+              </>
             )}
           </div>
         </div>

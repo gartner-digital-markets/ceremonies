@@ -73,7 +73,8 @@ export type EstimationEvent =
   | { type: "REVOTE"; facilitatorId: string }
   | { type: "NO_ESTIMATE"; facilitatorId: string }
   | { type: "PARTICIPANT_JOIN"; participant: Participant }
-  | { type: "PARTICIPANT_LEAVE"; participantId: string };
+  | { type: "PARTICIPANT_LEAVE"; participantId: string }
+  | { type: "TRANSFER_FACILITATION"; targetId: string; facilitatorId: string };
 
 export function createInitialState(facilitatorId: string): EstimationState {
   return {
@@ -99,12 +100,12 @@ function hasEveryoneVoted(state: EstimationState): boolean {
 
 export function transition(
   state: EstimationState,
-  event: EstimationEvent
+  event: EstimationEvent,
 ): EstimationState {
   switch (event.type) {
     case "PARTICIPANT_JOIN": {
       const exists = state.participants.some(
-        (p) => p.id === event.participant.id
+        (p) => p.id === event.participant.id,
       );
       if (exists) return state;
       return {
@@ -117,7 +118,7 @@ export function transition(
       return {
         ...state,
         participants: state.participants.filter(
-          (p) => p.id !== event.participantId
+          (p) => p.id !== event.participantId,
         ),
         votes: state.votes.filter((v) => v.odiedId !== event.participantId),
       };
@@ -137,7 +138,7 @@ export function transition(
     case "CAST_VOTE": {
       if (state.phase !== "voting") return state;
       const withoutPrevious = state.votes.filter(
-        (v) => v.odiedId !== event.odiedId
+        (v) => v.odiedId !== event.odiedId,
       );
       const newVote: Vote = {
         odiedId: event.odiedId,
@@ -230,6 +231,15 @@ export function transition(
       };
     }
 
+    case "TRANSFER_FACILITATION": {
+      if (!isFacilitator(state, event.facilitatorId)) return state;
+      const targetExists = state.participants.some(
+        (p) => p.id === event.targetId,
+      );
+      if (!targetExists) return state;
+      return { ...state, facilitatorId: event.targetId };
+    }
+
     default:
       return state;
   }
@@ -254,7 +264,7 @@ function getMajorityVote(votes: ReadonlyArray<Vote>): CardValue | null {
 
 export function getVoteSpread(
   votes: ReadonlyArray<Vote>,
-  participantCount: number
+  participantCount: number,
 ): {
   min: string;
   max: string;
@@ -263,7 +273,7 @@ export function getVoteSpread(
   voteCount: number;
 } {
   const numericVotes = votes.filter(
-    (v) => v.value !== "coffee" && v.value !== "question"
+    (v) => v.value !== "coffee" && v.value !== "question",
   );
   const allVoted = votes.length >= participantCount && participantCount > 0;
 

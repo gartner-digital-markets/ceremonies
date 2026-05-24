@@ -101,6 +101,7 @@ export interface RetroState {
   readonly actionItems: ReadonlyArray<ActionItem>;
   readonly rankedGroupIds: ReadonlyArray<string>; // groups sorted by votes for discussion
   readonly renamedLabels: Readonly<Record<string, string>>; // fingerprint(cardIds) → user label
+  readonly facilitatorLocked?: boolean; // true after an explicit TRANSFER_FACILITATION — suppresses creator-reclaim
 }
 
 // ── Events ──
@@ -108,8 +109,19 @@ export interface RetroState {
 export type RetroEvent =
   | { type: "PARTICIPANT_JOIN"; participant: Participant }
   | { type: "PARTICIPANT_LEAVE"; participantId: string }
-  | { type: "START_RETRO"; facilitatorId: string; teamId?: string; createdBy?: string; previousActions?: ReadonlyArray<PreviousAction> }
-  | { type: "MARK_ACTION"; facilitatorId: string; actionId: string; done: boolean }
+  | {
+      type: "START_RETRO";
+      facilitatorId: string;
+      teamId?: string;
+      createdBy?: string;
+      previousActions?: ReadonlyArray<PreviousAction>;
+    }
+  | {
+      type: "MARK_ACTION";
+      facilitatorId: string;
+      actionId: string;
+      done: boolean;
+    }
   | { type: "ADVANCE_PHASE"; facilitatorId: string }
   | { type: "ADD_CARD"; card: RetroCard }
   | { type: "EDIT_CARD"; cardId: string; text: string; anonymousId: string }
@@ -128,8 +140,14 @@ export type RetroEvent =
   | { type: "NEXT_TOPIC"; facilitatorId: string }
   | { type: "ADD_ACTION_ITEM"; item: ActionItem }
   | { type: "REMOVE_ACTION_ITEM"; facilitatorId: string; itemId: string }
-  | { type: "UPDATE_ACTION_ITEM"; itemId: string; text?: string; assignees?: ReadonlyArray<string> }
-  | { type: "CLOSE_RETRO"; facilitatorId: string };
+  | {
+      type: "UPDATE_ACTION_ITEM";
+      itemId: string;
+      text?: string;
+      assignees?: ReadonlyArray<string>;
+    }
+  | { type: "CLOSE_RETRO"; facilitatorId: string }
+  | { type: "TRANSFER_FACILITATION"; targetId: string; facilitatorId: string };
 
 // ── Initial State ──
 
@@ -164,7 +182,10 @@ function isFacilitator(state: RetroState, id: string): boolean {
   return state.facilitatorId === id;
 }
 
-function getVotesForPerson(votes: ReadonlyArray<RetroVote>, odiedId: string): number {
+function getVotesForPerson(
+  votes: ReadonlyArray<RetroVote>,
+  odiedId: string,
+): number {
   return votes.filter((v) => v.odiedId === odiedId).length;
 }
 
@@ -182,7 +203,7 @@ function groupFingerprint(cardIds: ReadonlyArray<string>): string {
 
 function recalcGroupVotes(
   groups: ReadonlyArray<CardGroup>,
-  votes: ReadonlyArray<RetroVote>
+  votes: ReadonlyArray<RetroVote>,
 ): ReadonlyArray<CardGroup> {
   return groups.map((g) => ({
     ...g,
@@ -214,7 +235,9 @@ function nextPhase(current: RetroPhase): RetroPhase | null {
 export function transition(state: RetroState, event: RetroEvent): RetroState {
   switch (event.type) {
     case "PARTICIPANT_JOIN": {
-      const exists = state.participants.some((p) => p.id === event.participant.id);
+      const exists = state.participants.some(
+        (p) => p.id === event.participant.id,
+      );
       if (exists) return state;
       return {
         ...state,
@@ -225,7 +248,9 @@ export function transition(state: RetroState, event: RetroEvent): RetroState {
     case "PARTICIPANT_LEAVE": {
       return {
         ...state,
-        participants: state.participants.filter((p) => p.id !== event.participantId),
+        participants: state.participants.filter(
+          (p) => p.id !== event.participantId,
+        ),
         votes: state.votes.filter((v) => v.odiedId !== event.participantId),
       };
     }
@@ -252,7 +277,7 @@ export function transition(state: RetroState, event: RetroEvent): RetroState {
       return {
         ...state,
         previousActions: state.previousActions.map((a) =>
-          a.id === event.actionId ? { ...a, done: event.done } : a
+          a.id === event.actionId ? { ...a, done: event.done } : a,
         ),
       };
     }
@@ -309,11 +334,12 @@ export function transition(state: RetroState, event: RetroEvent): RetroState {
     case "EDIT_CARD": {
       if (state.phase !== "writing") return state;
       const editTarget = state.cards.find((c) => c.id === event.cardId);
-      if (!editTarget || editTarget.anonymousId !== event.anonymousId) return state;
+      if (!editTarget || editTarget.anonymousId !== event.anonymousId)
+        return state;
       return {
         ...state,
         cards: state.cards.map((c) =>
-          c.id === event.cardId ? { ...c, text: event.text } : c
+          c.id === event.cardId ? { ...c, text: event.text } : c,
         ),
       };
     }
@@ -371,7 +397,7 @@ export function transition(state: RetroState, event: RetroEvent): RetroState {
       return {
         ...state,
         groups: state.groups.map((g) =>
-          g.id === event.groupId ? { ...g, label: event.label } : g
+          g.id === event.groupId ? { ...g, label: event.label } : g,
         ),
         renamedLabels: { ...state.renamedLabels, [fp]: event.label },
       };
@@ -389,7 +415,7 @@ export function transition(state: RetroState, event: RetroEvent): RetroState {
         groups: cleaned.map((g) =>
           g.id === event.groupId
             ? { ...g, cardIds: [...g.cardIds, event.cardId] }
-            : g
+            : g,
         ),
       };
     }
@@ -401,7 +427,7 @@ export function transition(state: RetroState, event: RetroEvent): RetroState {
         groups: state.groups.map((g) =>
           g.id === event.groupId
             ? { ...g, cardIds: g.cardIds.filter((id) => id !== event.cardId) }
-            : g
+            : g,
         ),
       };
     }
@@ -409,11 +435,16 @@ export function transition(state: RetroState, event: RetroEvent): RetroState {
     case "CAST_VOTE": {
       if (state.phase !== "voting") return state;
       // Check vote limit
-      if (getVotesForPerson(state.votes, event.odiedId) >= state.maxVotesPerPerson) {
+      if (
+        getVotesForPerson(state.votes, event.odiedId) >= state.maxVotesPerPerson
+      ) {
         return state;
       }
       // Can vote multiple times on same group (stacking)
-      const newVotes = [...state.votes, { odiedId: event.odiedId, groupId: event.groupId }];
+      const newVotes = [
+        ...state.votes,
+        { odiedId: event.odiedId, groupId: event.groupId },
+      ];
       const updatedGroups = recalcGroupVotes(state.groups, newVotes);
       return {
         ...state,
@@ -427,7 +458,11 @@ export function transition(state: RetroState, event: RetroEvent): RetroState {
       // Remove first matching vote for this person on this group
       let removed = false;
       const newVotes = state.votes.filter((v) => {
-        if (!removed && v.odiedId === event.odiedId && v.groupId === event.groupId) {
+        if (
+          !removed &&
+          v.odiedId === event.odiedId &&
+          v.groupId === event.groupId
+        ) {
           removed = true;
           return false;
         }
@@ -497,7 +532,8 @@ export function transition(state: RetroState, event: RetroEvent): RetroState {
 
     case "ADD_ACTION_ITEM": {
       // Action items can be added during discussing (merged discuss+commit)
-      if (state.phase !== "discussing" && state.phase !== "committing") return state;
+      if (state.phase !== "discussing" && state.phase !== "committing")
+        return state;
       return {
         ...state,
         actionItems: [...state.actionItems, event.item],
@@ -506,7 +542,8 @@ export function transition(state: RetroState, event: RetroEvent): RetroState {
 
     case "REMOVE_ACTION_ITEM": {
       if (!isFacilitator(state, event.facilitatorId)) return state;
-      if (state.phase !== "discussing" && state.phase !== "committing") return state;
+      if (state.phase !== "discussing" && state.phase !== "committing")
+        return state;
       return {
         ...state,
         actionItems: state.actionItems.filter((a) => a.id !== event.itemId),
@@ -514,7 +551,8 @@ export function transition(state: RetroState, event: RetroEvent): RetroState {
     }
 
     case "UPDATE_ACTION_ITEM": {
-      if (state.phase !== "discussing" && state.phase !== "committing") return state;
+      if (state.phase !== "discussing" && state.phase !== "committing")
+        return state;
       return {
         ...state,
         actionItems: state.actionItems.map((a) =>
@@ -522,9 +560,11 @@ export function transition(state: RetroState, event: RetroEvent): RetroState {
             ? {
                 ...a,
                 ...(event.text !== undefined ? { text: event.text } : {}),
-                ...(event.assignees !== undefined ? { assignees: event.assignees } : {}),
+                ...(event.assignees !== undefined
+                  ? { assignees: event.assignees }
+                  : {}),
               }
-            : a
+            : a,
         ),
       };
     }
@@ -532,8 +572,22 @@ export function transition(state: RetroState, event: RetroEvent): RetroState {
     case "CLOSE_RETRO": {
       if (!isFacilitator(state, event.facilitatorId)) return state;
       // Can close from discussing (merged discuss+commit) or committing
-      if (state.phase !== "discussing" && state.phase !== "committing") return state;
+      if (state.phase !== "discussing" && state.phase !== "committing")
+        return state;
       return { ...state, phase: "closed" };
+    }
+
+    case "TRANSFER_FACILITATION": {
+      if (!isFacilitator(state, event.facilitatorId)) return state;
+      const targetExists = state.participants.some(
+        (p) => p.id === event.targetId,
+      );
+      if (!targetExists) return state;
+      return {
+        ...state,
+        facilitatorId: event.targetId,
+        facilitatorLocked: true,
+      };
     }
 
     default:
@@ -545,14 +599,14 @@ export function transition(state: RetroState, event: RetroEvent): RetroState {
 
 export function getCardsByCategory(
   cards: ReadonlyArray<RetroCard>,
-  category: CardCategory
+  category: CardCategory,
 ): ReadonlyArray<RetroCard> {
   return cards.filter((c) => c.category === category);
 }
 
 export function getUngroupedCards(
   cards: ReadonlyArray<RetroCard>,
-  groups: ReadonlyArray<CardGroup>
+  groups: ReadonlyArray<CardGroup>,
 ): ReadonlyArray<RetroCard> {
   const groupedIds = new Set(groups.flatMap((g) => g.cardIds));
   return cards.filter((c) => !groupedIds.has(c.id));
@@ -562,7 +616,7 @@ export function getUngroupedCards(
 export function getVotingStatus(
   participants: ReadonlyArray<Participant>,
   votes: ReadonlyArray<RetroVote>,
-  maxVotesPerPerson: number
+  maxVotesPerPerson: number,
 ): {
   voted: ReadonlyArray<string>; // participant names who used ALL votes
   notVoted: ReadonlyArray<string>; // participant names who still have votes left
@@ -579,7 +633,11 @@ export function getVotingStatus(
   const notVoted = participants
     .filter((p) => (voteCounts.get(p.id) ?? 0) < maxVotesPerPerson)
     .map((p) => p.name);
-  return { voted, notVoted, allVoted: notVoted.length === 0 && participants.length > 0 };
+  return {
+    voted,
+    notVoted,
+    allVoted: notVoted.length === 0 && participants.length > 0,
+  };
 }
 
 // ── Proximity-Based Auto-Grouping ──
@@ -593,7 +651,7 @@ const PROXIMITY_THRESHOLD = 120; // px: cards within this distance cluster toget
  */
 export function computeProximityGroups(
   cards: ReadonlyArray<RetroCard>,
-  positions: Readonly<Record<string, CardPosition>>
+  positions: Readonly<Record<string, CardPosition>>,
 ): ReadonlyArray<CardGroup> {
   const cardIds = cards.map((c) => c.id).filter((id) => id in positions);
   if (cardIds.length === 0) return [];
@@ -669,7 +727,7 @@ export function scatterCardPositions(
   canvasHeight: number,
   cardWidth = 180,
   cardHeight = 80,
-  padding = 20
+  padding = 20,
 ): Record<string, CardPosition> {
   const positions: Record<string, CardPosition> = {};
   const usableW = canvasWidth - cardWidth - padding * 2;
@@ -677,7 +735,10 @@ export function scatterCardPositions(
 
   // Cap columns so each cell is at least cardWidth wide (prevents overlap)
   const maxCols = Math.max(1, Math.floor(usableW / (cardWidth + 8)));
-  const cols = Math.min(Math.ceil(Math.sqrt(cards.length * (usableW / usableH))), maxCols);
+  const cols = Math.min(
+    Math.ceil(Math.sqrt(cards.length * (usableW / usableH))),
+    maxCols,
+  );
   const rows = Math.ceil(cards.length / cols);
   const cellW = usableW / cols;
   const cellH = usableH / rows;
@@ -689,8 +750,20 @@ export function scatterCardPositions(
     const jitterX = (Math.random() - 0.5) * cellW * 0.4;
     const jitterY = (Math.random() - 0.5) * cellH * 0.4;
     positions[card.id] = {
-      x: Math.max(padding, Math.min(usableW + padding, padding + col * cellW + cellW / 2 + jitterX)),
-      y: Math.max(padding, Math.min(usableH + padding, padding + row * cellH + cellH / 2 + jitterY)),
+      x: Math.max(
+        padding,
+        Math.min(
+          usableW + padding,
+          padding + col * cellW + cellW / 2 + jitterX,
+        ),
+      ),
+      y: Math.max(
+        padding,
+        Math.min(
+          usableH + padding,
+          padding + row * cellH + cellH / 2 + jitterY,
+        ),
+      ),
     };
   });
 

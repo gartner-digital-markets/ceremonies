@@ -51,7 +51,10 @@ export default class RetroServer implements Party.Server {
         renamedLabels: saved.renamedLabels ?? {},
       };
       // Resume timer if it was running
-      if (this.state.phase === "discussing" && this.state.discussion.timerRunning) {
+      if (
+        this.state.phase === "discussing" &&
+        this.state.discussion.timerRunning
+      ) {
         this.startTimerInterval();
       }
     }
@@ -88,8 +91,14 @@ export default class RetroServer implements Party.Server {
     // 2. Fallback: assign to the first-connected participant when no facilitator
     //    is present or the current facilitator has left.
     const facilitatorStillHere = this.isFacilitatorConnected();
-    if (userId && userId === this.state.createdBy) {
-      // Creator joined: promote regardless of who is currently facilitator
+    if (
+      userId &&
+      userId === this.state.createdBy &&
+      !this.state.facilitatorLocked
+    ) {
+      // Creator joined: promote regardless of who is currently facilitator.
+      // Skip if an explicit TRANSFER_FACILITATION has occurred — the lock means
+      // the creator deliberately gave away facilitation and shouldn't reclaim it.
       if (this.state.facilitatorId !== participantId) {
         this.state = { ...this.state, facilitatorId: participantId };
       }
@@ -106,7 +115,7 @@ export default class RetroServer implements Party.Server {
         state: this.state,
         you: participantId,
         anonymousId, // so client knows which cards are "theirs"
-      })
+      }),
     );
 
     // Broadcast updated state to everyone
@@ -137,7 +146,7 @@ export default class RetroServer implements Party.Server {
           x: parsed.x,
           y: parsed.y,
         }),
-        [sender.id]
+        [sender.id],
       );
       return;
     }
@@ -203,9 +212,17 @@ export default class RetroServer implements Party.Server {
       const wasDiscussing = this.state.phase === "discussing";
       const isDiscussing = nextState.phase === "discussing";
 
-      if (isDiscussing && nextState.discussion.timerRunning && !this.timerInterval) {
+      if (
+        isDiscussing &&
+        nextState.discussion.timerRunning &&
+        !this.timerInterval
+      ) {
         this.startTimerInterval();
-      } else if (isDiscussing && !nextState.discussion.timerRunning && this.timerInterval) {
+      } else if (
+        isDiscussing &&
+        !nextState.discussion.timerRunning &&
+        this.timerInterval
+      ) {
         this.stopTimerInterval();
       } else if (!isDiscussing && this.timerInterval) {
         this.stopTimerInterval();
@@ -239,21 +256,24 @@ export default class RetroServer implements Party.Server {
         participantId: connState.participantId,
       });
 
-      // Fix 6: if the leaving participant is the room creator, keep facilitatorId
-      // as-is and wait for the creator to reconnect (reclaim-on-join handles return).
-      // Only reassign if the leaver is a non-creator facilitator.
+      // When the current facilitator leaves, reassign to the first remaining participant.
+      // Exception: if the leaver is the room creator AND no explicit transfer has occurred,
+      // keep their facilitatorId so reclaim-on-join can restore it when they reconnect.
       if (this.state.facilitatorId === connState.participantId) {
-        const isCreator =
-          connState.userId !== null && connState.userId === this.state.createdBy;
-        if (!isCreator) {
-          const next = this.getFirstConnectedParticipantId(connState.participantId);
+        const isUnlockedCreator =
+          !this.state.facilitatorLocked &&
+          connState.userId !== null &&
+          connState.userId === this.state.createdBy;
+        if (!isUnlockedCreator) {
+          const next = this.getFirstConnectedParticipantId(
+            connState.participantId,
+          );
           if (next) {
             this.state = { ...this.state, facilitatorId: next };
           }
         }
-        // If the creator is leaving, facilitatorId intentionally keeps pointing to their
-        // (now disconnected) participantId. The reclaim-on-join logic in onConnect will
-        // restore it when they reconnect.
+        // Unlocked creator leaving: keep facilitatorId pointing at their (disconnected)
+        // participantId so reclaim-on-join restores it on reconnect.
       }
 
       await this.persist();
@@ -318,7 +338,8 @@ export default class RetroServer implements Party.Server {
 
   private async saveToDatabase() {
     // Call the Next.js API route to persist the retro
-    const apiHost = (this.room.env.NEXT_PUBLIC_APP_URL as string) ?? "http://localhost:3456";
+    const apiHost =
+      (this.room.env.NEXT_PUBLIC_APP_URL as string) ?? "http://localhost:3456";
     const secret = (this.room.env.INTERNAL_API_SECRET as string) ?? "";
     const res = await fetch(`${apiHost}/api/retros/save`, {
       method: "POST",
