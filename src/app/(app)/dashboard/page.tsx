@@ -192,7 +192,7 @@ export default async function DashboardPage({
                       </span>
                       {isEmojiEstimate(r.finalEstimate) ? (
                         <span
-                          className="shrink-0 text-base leading-none"
+                          className="flex w-7 shrink-0 items-center justify-center text-base leading-none"
                           title={r.finalEstimate}
                         >
                           {formatEstimate(r.finalEstimate)}
