@@ -15,6 +15,7 @@ import { cn } from "@/lib/utils";
 import { EditPencil } from "iconoir-react";
 
 interface GroupingPhaseProps {
+  readonly phase: "grouping" | "labeling";
   readonly cards: ReadonlyArray<RetroCard>;
   readonly groups: ReadonlyArray<CardGroup>;
   readonly cardPositions: Readonly<Record<string, CardPosition>>;
@@ -76,6 +77,7 @@ const CURSOR_COLORS = [
 ];
 
 export function GroupingPhase({
+  phase,
   cards,
   groups,
   cardPositions,
@@ -97,6 +99,7 @@ export function GroupingPhase({
   const [hasScattered, setHasScattered] = useState(false);
 
   const canvasHeight = getCanvasHeight(cards.length);
+  const isLabeling = phase === "labeling";
 
   // Safe access: old state may not have cardPositions at all
   const safePositions = cardPositions ?? {};
@@ -131,8 +134,9 @@ export function GroupingPhase({
       const y = (e.clientY - rect.top) * scaleY;
       onSendCursor(x, y);
 
-      // If dragging, move the card
-      if (dragging) {
+      // If dragging, move the card. Cards lock in place during labeling so the
+      // facilitator can focus on names without changing groups.
+      if (dragging && !isLabeling) {
         const newX = Math.max(
           0,
           Math.min(CANVAS_WIDTH - CARD_WIDTH, x - dragging.offsetX),
@@ -144,12 +148,12 @@ export function GroupingPhase({
         onMoveCard(dragging.cardId, newX, newY);
       }
     },
-    [onSendCursor, onMoveCard, dragging, canvasHeight],
+    [onSendCursor, onMoveCard, dragging, canvasHeight, isLabeling],
   );
 
   const handlePointerDown = useCallback(
     (cardId: string, e: React.PointerEvent) => {
-      if (!canvasRef.current) return;
+      if (!canvasRef.current || isLabeling) return;
       const rect = canvasRef.current.getBoundingClientRect();
       const scaleX = CANVAS_WIDTH / rect.width;
       const scaleY = canvasHeight / rect.height;
@@ -164,7 +168,7 @@ export function GroupingPhase({
       });
       (e.target as HTMLElement).setPointerCapture(e.pointerId);
     },
-    [cardPositions, canvasHeight],
+    [cardPositions, canvasHeight, isLabeling],
   );
 
   const handlePointerUp = useCallback(() => {
@@ -204,16 +208,17 @@ export function GroupingPhase({
       <div className="flex items-center justify-between">
         <div>
           <h2 className="font-display text-3xl tracking-ceremony">
-            Group & Label
+            {isLabeling ? "Label groups" : "Group cards"}
           </h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            Drag cards close together to form groups. Everyone moves cards in
-            real-time.
+            {isLabeling
+              ? "Facilitator: review each group name before the team votes."
+              : "Drag cards close together to form groups. Everyone moves cards in real-time."}
           </p>
         </div>
         {isFacilitator && (
-          <Button onClick={onAdvance} className="h-11 shrink-0">
-            Move to voting
+          <Button onClick={onAdvance} className="relative z-10 h-11 shrink-0">
+            {isLabeling ? "Move to voting" : "Move to labeling"}
           </Button>
         )}
       </div>
@@ -251,6 +256,7 @@ export function GroupingPhase({
             height={bounds.height}
             canvasWidth={CANVAS_WIDTH}
             canvasHeight={canvasHeight}
+            canRename={isLabeling && isFacilitator}
             onRename={onRenameGroup}
           />
         ))}
@@ -272,7 +278,9 @@ export function GroupingPhase({
                 style.bg,
                 isDragging
                   ? "shadow-hard-lg z-30 scale-105 cursor-grabbing"
-                  : "shadow-hard-sm z-10 cursor-grab hover:shadow-hard",
+                  : isLabeling
+                    ? "shadow-hard-sm z-10 cursor-default"
+                    : "shadow-hard-sm z-10 cursor-grab hover:shadow-hard",
               )}
               style={{
                 left: `${(pos.x / CANVAS_WIDTH) * 100}%`,
@@ -333,9 +341,18 @@ export function GroupingPhase({
           <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-muted-foreground self-center">
             {groups.length} group{groups.length !== 1 ? "s" : ""} formed:
           </span>
-          {groups.map((g) => (
-            <RenameableChip key={g.id} group={g} onRename={onRenameGroup} />
-          ))}
+          {groups.map((g) =>
+            isLabeling && isFacilitator ? (
+              <RenameableChip key={g.id} group={g} onRename={onRenameGroup} />
+            ) : (
+              <span
+                key={g.id}
+                className="rounded-md border-2 border-border bg-muted px-2.5 py-1 text-xs font-bold"
+              >
+                {g.label} ({g.cardIds.length})
+              </span>
+            ),
+          )}
         </div>
       )}
     </div>
@@ -413,6 +430,7 @@ function GroupBoundary({
   height,
   canvasWidth,
   canvasHeight,
+  canRename,
   onRename,
 }: {
   group: CardGroup;
@@ -422,6 +440,7 @@ function GroupBoundary({
   height: number;
   canvasWidth: number;
   canvasHeight: number;
+  canRename: boolean;
   onRename: (groupId: string, label: string) => void;
 }) {
   const [editing, setEditing] = useState(false);
@@ -454,27 +473,31 @@ function GroupBoundary({
     >
       {/* Group label */}
       <div className="absolute top-1.5 left-2 z-20">
-        {editing ? (
+        {canRename && editing ? (
           <input
             value={label}
             onChange={(e) => setLabel(e.target.value)}
             onBlur={handleRename}
             onKeyDown={(e) => e.key === "Enter" && handleRename()}
             autoFocus
-            className="h-6 rounded border-2 border-primary bg-card px-2 text-[10px] font-bold focus:outline-none"
+            className="h-6 max-w-44 rounded border-2 border-primary bg-card px-2 text-[10px] font-bold focus:outline-none"
             onClick={(e) => e.stopPropagation()}
           />
-        ) : (
+        ) : canRename ? (
           <button
             onClick={(e) => {
               e.stopPropagation();
               setEditing(true);
             }}
-            className="flex items-center gap-1 rounded-md bg-primary/15 px-2 py-0.5 text-[10px] font-bold text-primary transition-colors hover:bg-primary/25"
+            className="flex max-w-44 items-center gap-1 rounded-md bg-primary/15 px-2 py-0.5 text-[10px] font-bold text-primary transition-colors hover:bg-primary/25"
           >
-            {group.label}
-            <EditPencil width={10} height={10} />
+            <span className="truncate">{group.label}</span>
+            <EditPencil width={10} height={10} className="shrink-0" />
           </button>
+        ) : (
+          <span className="flex max-w-44 items-center rounded-md bg-muted/80 px-2 py-0.5 text-[10px] font-bold text-muted-foreground">
+            <span className="truncate">{group.label}</span>
+          </span>
         )}
       </div>
     </div>

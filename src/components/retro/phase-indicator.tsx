@@ -5,7 +5,8 @@ const PHASE_LABELS: Record<RetroPhase, string> = {
   lobby: "Lobby",
   haunting: "The Haunting",
   writing: "Silent Write",
-  grouping: "Group & Label",
+  grouping: "Group",
+  labeling: "Label",
   voting: "Vote",
   discussing: "Discuss",
   committing: "Commit",
@@ -16,6 +17,7 @@ const PHASE_STEPS: ReadonlyArray<RetroPhase> = [
   "haunting",
   "writing",
   "grouping",
+  "labeling",
   "voting",
   "discussing",
   "committing",
@@ -33,7 +35,7 @@ export function PhaseIndicator({ phase }: { phase: RetroPhase }) {
   }
 
   return (
-    <div className="flex items-center gap-1.5">
+    <div className="flex items-center gap-1.5 whitespace-nowrap">
       {PHASE_STEPS.map((step, i) => {
         const isActive = step === phase;
         const isPast = i < currentIdx;

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useState, useCallback, useRef, useEffect, useMemo } from "react";
 import usePartySocket from "partysocket/react";
 import type {
   EstimationState,
@@ -17,6 +17,10 @@ interface UseEstimationRoomOptions {
 }
 
 type SaveResult = "idle" | "saving" | "saved" | "error";
+
+function generateId(): string {
+  return Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
+}
 
 interface UseEstimationRoomResult {
   readonly state: EstimationState | null;
@@ -54,10 +58,21 @@ export function useEstimationRoom({
     stateRef.current = state;
   }, [state]);
 
+  const persistedAnonId = useMemo(() => {
+    if (typeof window === "undefined") return "";
+    const key = `estimation-anon-${roomId}`;
+    let id = localStorage.getItem(key);
+    if (!id) {
+      id = generateId();
+      localStorage.setItem(key, id);
+    }
+    return id;
+  }, [roomId]);
+
   const socket = usePartySocket({
     host: process.env.NEXT_PUBLIC_PARTYKIT_HOST ?? "127.0.0.1:1999",
     room: roomId,
-    query: { name: playerName },
+    query: { name: playerName, anonId: persistedAnonId },
     onOpen() {
       setConnected(true);
     },

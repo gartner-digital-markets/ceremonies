@@ -222,17 +222,17 @@ function RetroRoom({
   }
 
   return (
-    <div className="relative mx-auto flex min-h-svh max-w-4xl flex-col px-4 py-6 sm:py-8">
+    <div className="relative isolate mx-auto flex min-h-svh max-w-5xl flex-col px-4 py-6 sm:py-8">
       <HalftoneBlob
         variant="coffee"
         size={320}
         anim="b"
         delay={11}
-        className="-top-20 -right-12"
+        className="-top-20 -right-12 -z-10 opacity-60"
       />
       <ConnectionStatus connected={connected} hasState={!!state} />
       {/* Header */}
-      <header className="flex items-center justify-between">
+      <header className="relative z-10 flex flex-wrap items-center justify-between gap-4">
         <div>
           <div className="flex items-baseline gap-3">
             <Link
@@ -246,7 +246,7 @@ function RetroRoom({
               Retro
             </h1>
           </div>
-          <div className="mt-1 flex items-center gap-2">
+          <div className="mt-1 flex flex-wrap items-center gap-2">
             <span className="text-xs font-bold text-muted-foreground">
               {state.participants.length} participant
               {state.participants.length !== 1 ? "s" : ""}
@@ -272,9 +272,9 @@ function RetroRoom({
             )}
           </div>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex min-w-0 flex-wrap items-center justify-end gap-3">
           {state.phase !== "lobby" && state.phase !== "closed" && (
-            <div className="hidden sm:block">
+            <div className="hidden max-w-full overflow-x-auto sm:block">
               <PhaseIndicator phase={state.phase} />
             </div>
           )}
@@ -300,7 +300,7 @@ function RetroRoom({
       <div className="my-5 h-0.5 bg-border" />
 
       {/* Phase content */}
-      <div className="flex-1">
+      <div className="relative z-10 flex-1">
         {state.phase === "lobby" && (
           <LobbyPhase
             teamId={teamId}
@@ -338,8 +338,9 @@ function RetroRoom({
           />
         )}
 
-        {state.phase === "grouping" && (
+        {(state.phase === "grouping" || state.phase === "labeling") && (
           <GroupingPhase
+            phase={state.phase}
             cards={state.cards}
             groups={state.groups}
             cardPositions={state.cardPositions}

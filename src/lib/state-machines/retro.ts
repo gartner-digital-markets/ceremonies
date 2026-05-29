@@ -1,7 +1,7 @@
 /**
  * Retro ceremony state machine.
  *
- * Phases: haunting → writing → grouping → voting → discussing → committing → closed
+ * Phases: haunting → writing → grouping → labeling → voting → discussing → committing → closed
  *
  * Key design decisions:
  * - Writing phase is TRUE anonymous: server strips sender identity, assigns random IDs
@@ -17,6 +17,7 @@ export type RetroPhase =
   | "haunting"
   | "writing"
   | "grouping"
+  | "labeling"
   | "voting"
   | "discussing"
   | "committing"
@@ -129,7 +130,7 @@ export type RetroEvent =
   | { type: "MOVE_CARD_POSITION"; cardId: string; x: number; y: number }
   | { type: "SCATTER_CARDS"; positions: Readonly<Record<string, CardPosition>> }
   | { type: "CREATE_GROUP"; group: CardGroup }
-  | { type: "RENAME_GROUP"; groupId: string; label: string }
+  | { type: "RENAME_GROUP"; groupId: string; label: string; facilitatorId: string }
   | { type: "MOVE_CARD_TO_GROUP"; cardId: string; groupId: string }
   | { type: "REMOVE_CARD_FROM_GROUP"; cardId: string; groupId: string }
   | { type: "CAST_VOTE"; odiedId: string; groupId: string }
@@ -218,6 +219,7 @@ const PHASE_ORDER: ReadonlyArray<RetroPhase> = [
   "haunting",
   "writing",
   "grouping",
+  "labeling",
   "voting",
   "discussing",
   "committing",
@@ -303,8 +305,9 @@ export function transition(state: RetroState, event: RetroEvent): RetroState {
         };
       }
 
-      // When advancing to voting, auto-group ungrouped cards
-      if (next === "voting") {
+      // When advancing to labeling, auto-group any ungrouped cards so the
+      // facilitator can review and name every cluster before voting.
+      if (next === "labeling") {
         const groupedCardIds = new Set(state.groups.flatMap((g) => g.cardIds));
         const ungrouped = state.cards.filter((c) => !groupedCardIds.has(c.id));
         const newGroups = ungrouped.map((c) => ({
@@ -390,7 +393,8 @@ export function transition(state: RetroState, event: RetroEvent): RetroState {
     }
 
     case "RENAME_GROUP": {
-      if (state.phase !== "grouping") return state;
+      if (state.phase !== "labeling") return state;
+      if (!isFacilitator(state, event.facilitatorId)) return state;
       const target = state.groups.find((g) => g.id === event.groupId);
       if (!target) return state;
       const fp = groupFingerprint(target.cardIds);

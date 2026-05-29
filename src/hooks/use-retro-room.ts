@@ -290,9 +290,9 @@ export function useRetroRoom({
 
   const renameGroup = useCallback(
     (groupId: string, label: string) => {
-      send({ type: "RENAME_GROUP", groupId, label });
+      send({ type: "RENAME_GROUP", groupId, label, facilitatorId: myId });
     },
-    [send],
+    [send, myId],
   );
 
   const moveCardToGroup = useCallback(

@@ -63,9 +63,11 @@ export default class RetroServer implements Party.Server {
   async onConnect(conn: Party.Connection, ctx: Party.ConnectionContext) {
     const url = new URL(ctx.request.url);
     const name = url.searchParams.get("name") ?? "Anonymous";
-    const participantId = conn.id;
-    // Reuse the client's persisted anonymousId for session continuity across reconnects
+    // Reuse the client's persisted anonymousId for session continuity across reconnects.
+    // Also use it as the participantId so reconnects do not accidentally transfer
+    // facilitation to whoever happens to join next.
     const anonymousId = url.searchParams.get("anonId") || generateId();
+    const participantId = anonymousId;
     // Clerk userId forwarded by the client; null for anonymous participants
     const userId = url.searchParams.get("userId") ?? null;
 
@@ -76,33 +78,19 @@ export default class RetroServer implements Party.Server {
       userId,
     } satisfies ConnectionState);
 
+    const isFirstActiveConnection = [...this.room.getConnections()].length <= 1;
+
     // Add participant
     this.state = transition(this.state, {
       type: "PARTICIPANT_JOIN",
       participant: { id: participantId, name, joinedAt: Date.now() },
     });
 
-    // Facilitator assignment:
-    // 1. If the joining participant is the room creator (Clerk userId matches
-    //    state.createdBy), promote them immediately. This ensures the creator
-    //    always reclaims facilitator on join, even if someone else joined first.
-    //    Incident 2026-04-30: a participant loaded the page before the creator,
-    //    claimed facilitator, and the creator could not close their own retro.
-    // 2. Fallback: assign to the first-connected participant when no facilitator
-    //    is present or the current facilitator has left.
-    const facilitatorStillHere = this.isFacilitatorConnected();
-    if (
-      userId &&
-      userId === this.state.createdBy &&
-      !this.state.facilitatorLocked
-    ) {
-      // Creator joined: promote regardless of who is currently facilitator.
-      // Skip if an explicit TRANSFER_FACILITATION has occurred — the lock means
-      // the creator deliberately gave away facilitation and shouldn't reclaim it.
-      if (this.state.facilitatorId !== participantId) {
-        this.state = { ...this.state, facilitatorId: participantId };
-      }
-    } else if (!this.state.facilitatorId || !facilitatorStillHere) {
+    // Assign the facilitator when a room/session starts. After that,
+    // facilitation only changes via an explicit TRANSFER_FACILITATION event.
+    // Do not promote later joiners, including the room creator, while another
+    // facilitator is already assigned.
+    if (!this.state.facilitatorId || isFirstActiveConnection) {
       this.state = { ...this.state, facilitatorId: participantId };
     }
 
@@ -251,31 +239,19 @@ export default class RetroServer implements Party.Server {
         this.broadcastTyping();
       }
 
-      this.state = transition(this.state, {
-        type: "PARTICIPANT_LEAVE",
-        participantId: connState.participantId,
-      });
-
-      // When the current facilitator leaves, reassign to the first remaining participant.
-      // Exception: if the leaver is the room creator AND no explicit transfer has occurred,
-      // keep their facilitatorId so reclaim-on-join can restore it when they reconnect.
-      if (this.state.facilitatorId === connState.participantId) {
-        const isUnlockedCreator =
-          !this.state.facilitatorLocked &&
-          connState.userId !== null &&
-          connState.userId === this.state.createdBy;
-        if (!isUnlockedCreator) {
-          const next = this.getFirstConnectedParticipantId(
-            connState.participantId,
-          );
-          if (next) {
-            this.state = { ...this.state, facilitatorId: next };
-          }
-        }
-        // Unlocked creator leaving: keep facilitatorId pointing at their (disconnected)
-        // participantId so reclaim-on-join restores it on reconnect.
+      // A reconnect can briefly overlap the old socket. Because participantId is
+      // now stable, only remove the participant when no other live socket for the
+      // same participant remains.
+      if (!this.isParticipantConnected(connState.participantId)) {
+        this.state = transition(this.state, {
+          type: "PARTICIPANT_LEAVE",
+          participantId: connState.participantId,
+        });
       }
 
+      // Do not auto-transfer facilitation when the facilitator disconnects.
+      // They can reclaim it on reconnect because participantId is stable; any
+      // handoff should be a deliberate TRANSFER_FACILITATION action.
       await this.persist();
       this.broadcast();
     }
@@ -364,20 +340,12 @@ export default class RetroServer implements Party.Server {
 
   // ── Helpers ──
 
-  private isFacilitatorConnected(): boolean {
+  private isParticipantConnected(participantId: string): boolean {
     for (const conn of this.room.getConnections()) {
       const cs = conn.state as ConnectionState | undefined;
-      if (cs?.participantId === this.state.facilitatorId) return true;
+      if (cs?.participantId === participantId) return true;
     }
     return false;
-  }
-
-  private getFirstConnectedParticipantId(excludeId?: string): string | null {
-    for (const conn of this.room.getConnections()) {
-      const cs = conn.state as ConnectionState | undefined;
-      if (cs && cs.participantId !== excludeId) return cs.participantId;
-    }
-    return null;
   }
 
   private broadcast() {

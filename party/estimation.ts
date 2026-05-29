@@ -39,12 +39,16 @@ export default class EstimationServer implements Party.Server {
   async onConnect(conn: Party.Connection, ctx: Party.ConnectionContext) {
     const url = new URL(ctx.request.url);
     const name = url.searchParams.get("name") ?? "Anonymous";
-    const participantId = conn.id;
+    // Use a client-stable participant id so reconnects do not accidentally
+    // transfer facilitation to whoever happens to join next.
+    const participantId = url.searchParams.get("anonId") ?? conn.id;
 
     conn.setState({
       participantId,
       participantName: name,
     } satisfies ConnectionState);
+
+    const isFirstActiveConnection = [...this.room.getConnections()].length <= 1;
 
     // Add participant to state
     this.state = transition(this.state, {
@@ -52,9 +56,11 @@ export default class EstimationServer implements Party.Server {
       participant: { id: participantId, name, joinedAt: Date.now() },
     });
 
-    // If no facilitator or old facilitator is gone, assign to this person
-    const facilitatorStillHere = this.isFacilitatorConnected();
-    if (!this.state.facilitatorId || !facilitatorStillHere) {
+    // Assign the facilitator when a room/session starts. After that,
+    // facilitation only changes via an explicit TRANSFER_FACILITATION event.
+    // In particular, do not promote a later joiner just because the facilitator
+    // is briefly reconnecting.
+    if (!this.state.facilitatorId || isFirstActiveConnection) {
       this.state = { ...this.state, facilitatorId: participantId };
     }
 
@@ -158,21 +164,19 @@ export default class EstimationServer implements Party.Server {
   async onClose(conn: Party.Connection) {
     const connState = conn.state as ConnectionState | undefined;
     if (connState) {
-      this.state = transition(this.state, {
-        type: "PARTICIPANT_LEAVE",
-        participantId: connState.participantId,
-      });
-
-      // If the facilitator left, reassign to first remaining connection
-      if (this.state.facilitatorId === connState.participantId) {
-        const nextFacilitator = this.getFirstConnectedParticipantId(
-          connState.participantId
-        );
-        if (nextFacilitator) {
-          this.state = { ...this.state, facilitatorId: nextFacilitator };
-        }
+      // A reconnect can briefly overlap the old socket. Because participantId is
+      // now stable, only remove the participant when no other live socket for the
+      // same participant remains.
+      if (!this.isParticipantConnected(connState.participantId)) {
+        this.state = transition(this.state, {
+          type: "PARTICIPANT_LEAVE",
+          participantId: connState.participantId,
+        });
       }
 
+      // Do not auto-transfer facilitation when the facilitator disconnects.
+      // They can reclaim it on reconnect because participantId is stable; any
+      // handoff should be a deliberate TRANSFER_FACILITATION action.
       await this.persist();
       this.broadcast();
     }
@@ -222,26 +226,12 @@ export default class EstimationServer implements Party.Server {
     console.log(`[estimation] Saved session ${result.sessionId} for room ${this.room.id}`);
   }
 
-  private isFacilitatorConnected(): boolean {
+  private isParticipantConnected(participantId: string): boolean {
     for (const conn of this.room.getConnections()) {
       const cs = conn.state as ConnectionState | undefined;
-      if (cs?.participantId === this.state.facilitatorId) {
-        return true;
-      }
+      if (cs?.participantId === participantId) return true;
     }
     return false;
-  }
-
-  private getFirstConnectedParticipantId(
-    excludeId?: string
-  ): string | null {
-    for (const conn of this.room.getConnections()) {
-      const cs = conn.state as ConnectionState | undefined;
-      if (cs && cs.participantId !== excludeId) {
-        return cs.participantId;
-      }
-    }
-    return null;
   }
 
   private broadcast() {

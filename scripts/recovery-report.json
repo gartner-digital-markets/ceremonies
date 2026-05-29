@@ -1,0 +1,96 @@
+{
+  "target": "connectshadman@gmail.com",
+  "clerkUsers": [
+    {
+      "env": "live",
+      "id": "user_3BkPt0YqXMF809cQ2b0fLzKBWrg",
+      "primaryEmail": "connectshadman@gmail.com",
+      "createdAt": 1775030305917
+    },
+    {
+      "env": "test",
+      "id": "user_3BEchbTg404Pv4b5k3E0vRNNnhZ",
+      "primaryEmail": "connectshadman@gmail.com",
+      "createdAt": 1774057789311
+    }
+  ],
+  "ownedTeams": [
+    {
+      "id": "e5468d22-2270-409a-a3f2-e9bb2f907da0",
+      "name": "Team InSanity",
+      "created_by": "user_3BkPt0YqXMF809cQ2b0fLzKBWrg",
+      "created_at": "2026-04-01T05:58:39.603Z"
+    },
+    {
+      "id": "8d12f601-b654-479b-8f4c-fd07d562c327",
+      "name": "Team InSanity",
+      "created_by": "user_3BEchbTg404Pv4b5k3E0vRNNnhZ",
+      "created_at": "2026-03-22T18:07:21.188Z"
+    }
+  ],
+  "memberOfTeams": [
+    {
+      "team_id": "e5468d22-2270-409a-a3f2-e9bb2f907da0",
+      "user_id": "user_3BkPt0YqXMF809cQ2b0fLzKBWrg",
+      "role": "owner",
+      "team_name": "Team InSanity"
+    },
+    {
+      "team_id": "8d12f601-b654-479b-8f4c-fd07d562c327",
+      "user_id": "user_3BEchbTg404Pv4b5k3E0vRNNnhZ",
+      "role": "owner",
+      "team_name": "Team InSanity"
+    }
+  ],
+  "estimationsMatchingUserId": [],
+  "estimationsInUserTeamsButOtherCreator": [
+    {
+      "id": "22819c02-41ae-4c54-b6cc-d981c53b163f",
+      "room_code": "iymbip",
+      "team_id": "e5468d22-2270-409a-a3f2-e9bb2f907da0",
+      "created_by": "partykit:recovered",
+      "participant_count": 8,
+      "created_at": "2026-04-08T16:55:53.515Z",
+      "closed_at": "2026-04-08T16:55:53.515Z"
+    },
+    {
+      "id": "b8dfb131-0e83-43f9-b140-f5c4d70a682a",
+      "room_code": "wfw5pn",
+      "team_id": "e5468d22-2270-409a-a3f2-e9bb2f907da0",
+      "created_by": "partykit:recovered",
+      "participant_count": 9,
+      "created_at": "2026-04-08T16:55:52.477Z",
+      "closed_at": "2026-04-08T16:55:52.477Z"
+    }
+  ],
+  "estimationsAllPartykitOrphans": [
+    {
+      "id": "22819c02-41ae-4c54-b6cc-d981c53b163f",
+      "room_code": "iymbip",
+      "team_id": "e5468d22-2270-409a-a3f2-e9bb2f907da0",
+      "created_by": "partykit:recovered",
+      "participant_count": 8,
+      "created_at": "2026-04-08T16:55:53.515Z",
+      "closed_at": "2026-04-08T16:55:53.515Z"
+    },
+    {
+      "id": "b8dfb131-0e83-43f9-b140-f5c4d70a682a",
+      "room_code": "wfw5pn",
+      "team_id": "e5468d22-2270-409a-a3f2-e9bb2f907da0",
+      "created_by": "partykit:recovered",
+      "participant_count": 9,
+      "created_at": "2026-04-08T16:55:52.477Z",
+      "closed_at": "2026-04-08T16:55:52.477Z"
+    }
+  ],
+  "retrosMatchingUserId": [],
+  "retrosInUserTeamsButOtherCreator": [],
+  "retrosAllPartykitOrphans": [],
+  "globalCreatorBreakdownEstimations": [
+    {
+      "created_by": "partykit:recovered",
+      "estimation_rows": 2
+    }
+  ],
+  "globalCreatorBreakdownRetros": []
+}

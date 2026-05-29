@@ -18,6 +18,7 @@ import { UserButton } from "@clerk/nextjs";
 import { TeamSelector } from "@/components/teams/team-selector";
 import { ClaimSession } from "@/components/estimation/claim-session";
 import { ClaimRetro } from "@/components/retro/claim-retro";
+import { DeleteSessionButton } from "@/components/shared/delete-session-button";
 
 export default async function DashboardPage({
   searchParams,
@@ -51,6 +52,8 @@ export default async function DashboardPage({
       ? activeTeamId
       : undefined;
   const currentTeamId = validatedActiveTeamId ?? userTeams[0]?.id;
+  const currentTeamRole = userTeams.find((team) => team.id === currentTeamId)?.role;
+  const canDeleteTeamSessions = currentTeamRole === "owner";
 
   // Fetch retros for current team or user
   let pastRetros: Awaited<ReturnType<typeof fetchRetros>> = [];
@@ -169,7 +172,7 @@ export default async function DashboardPage({
                     {session.roomCode}
                   </p>
                 </div>
-                <div className="flex gap-3 text-center">
+                <div className="flex items-center gap-3 text-center">
                   <div>
                     <p className="font-mono text-lg font-bold">
                       {session.results.length}
@@ -186,6 +189,10 @@ export default async function DashboardPage({
                       players
                     </p>
                   </div>
+                  {(session.createdBy === userId ||
+                    (canDeleteTeamSessions && session.teamId === currentTeamId)) && (
+                    <DeleteSessionButton kind="estimation" id={session.id} />
+                  )}
                 </div>
               </div>
               {session.results.length > 0 && (
@@ -249,10 +256,9 @@ export default async function DashboardPage({
           )}
 
           {pastRetros.map((retro, i) => (
-            <Link
+            <div
               key={retro.id}
-              href={`/retro/${retro.roomCode}`}
-              className="stagger-in block rounded-xl border-2 border-border bg-card p-4 shadow-hard-sm transition-all hover:border-primary hover:shadow-hard"
+              className="stagger-in rounded-xl border-2 border-border bg-card p-4 shadow-hard-sm transition-all hover:border-primary hover:shadow-hard"
               style={{ animationDelay: `${i * 60}ms` }}
             >
               <div className="flex items-center justify-between">
@@ -270,7 +276,7 @@ export default async function DashboardPage({
                     {retro.roomCode}
                   </p>
                 </div>
-                <div className="flex gap-3 text-center">
+                <div className="flex items-center gap-3 text-center">
                   <div>
                     <p className="font-mono text-lg font-bold">
                       {retro.cardCount}
@@ -287,6 +293,10 @@ export default async function DashboardPage({
                       actions
                     </p>
                   </div>
+                  {(retro.createdBy === userId ||
+                    (canDeleteTeamSessions && retro.teamId === currentTeamId)) && (
+                    <DeleteSessionButton kind="retro" id={retro.id} />
+                  )}
                 </div>
               </div>
 
@@ -315,7 +325,13 @@ export default async function DashboardPage({
                   ))}
                 </div>
               )}
-            </Link>
+              <Link
+                href={`/retro/${retro.roomCode}`}
+                className="mt-3 inline-flex text-xs font-bold text-primary underline-offset-4 hover:underline"
+              >
+                Open retro
+              </Link>
+            </div>
           ))}
 
           {/* Claim a past retro */}
