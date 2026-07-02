@@ -18,6 +18,14 @@ import {
  * broadcast. Typing indicators are ephemeral: only participantIds are
  * broadcast (never names), and clients filter their own ID before showing
  * the indicator. Typing state is never persisted to storage.
+ *
+ * BIAS-FREE WRITING: During the writing phase, a card's `text` is only ever
+ * sent to its own author. Every other connection receives the card with an
+ * empty `text` (id/category/anonymousId/createdAt are kept so counts and
+ * category columns still render). Full text is revealed to everyone once the
+ * facilitator advances past `writing`. This is enforced server-side so other
+ * participants' content is not merely hidden in the UI — it never reaches
+ * their client. The full, unredacted state is always persisted and saved.
  */
 
 interface ConnectionState {
@@ -99,11 +107,12 @@ export default class RetroServer implements Party.Server {
 
     await this.persist();
 
-    // Send full state + identity to new connection
+    // Send state + identity to new connection. During writing, other authors'
+    // card text is redacted (see stateForConnection).
     conn.send(
       JSON.stringify({
         type: "sync",
-        state: this.state,
+        state: this.stateForConnection(anonymousId),
         you: participantId,
         anonymousId, // so client knows which cards are "theirs"
       }),
@@ -351,9 +360,37 @@ export default class RetroServer implements Party.Server {
     return false;
   }
 
+  /**
+   * Produce the view of the state a given connection is allowed to see.
+   *
+   * During the writing phase, cards are unreadable to everyone but their
+   * author to avoid anchoring/bias while people are still writing. We blank
+   * out the `text` of every card the recipient does not own; id, category,
+   * anonymousId and createdAt are preserved so counts and category columns
+   * still render. Outside the writing phase the full state is returned — this
+   * is the reveal. An empty/unknown anonymousId matches no card, so all text
+   * is stripped (fail-closed).
+   */
+  private stateForConnection(anonymousId: string): RetroState {
+    if (this.state.phase !== "writing") return this.state;
+    return {
+      ...this.state,
+      cards: this.state.cards.map((card) =>
+        card.anonymousId === anonymousId ? card : { ...card, text: "" },
+      ),
+    };
+  }
+
   private broadcast() {
-    const message = JSON.stringify({ type: "update", state: this.state });
-    this.room.broadcast(message);
+    for (const conn of this.room.getConnections()) {
+      const cs = conn.state as ConnectionState | undefined;
+      conn.send(
+        JSON.stringify({
+          type: "update",
+          state: this.stateForConnection(cs?.anonymousId ?? ""),
+        }),
+      );
+    }
   }
 
   /** Broadcast the current typing set to all connections. Never includes names. */
