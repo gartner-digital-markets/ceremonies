@@ -5,7 +5,7 @@ import type { RetroCard, CardCategory } from "@/lib/state-machines/retro";
 import { Button } from "@/components/ui/button";
 import { HappyIcon, SadIcon, ConfusedIcon } from "@/components/shared/icons";
 import { cn } from "@/lib/utils";
-import { Plus, Xmark, EditPencil, Check } from "iconoir-react";
+import { Plus, Xmark, EditPencil, Check, Lock } from "iconoir-react";
 
 interface WritingPhaseProps {
   readonly cards: ReadonlyArray<RetroCard>;
@@ -116,7 +116,8 @@ export function WritingPhase({
           Silent Write
         </h2>
         <p className="mt-2 text-sm text-muted-foreground">
-          Write your thoughts anonymously. No one can see who wrote what.
+          Write your thoughts anonymously. Others&apos; cards stay hidden until
+          the reveal — no peeking, no bias.
         </p>
         <p className="mt-1 font-mono text-xs text-muted-foreground/60">
           {totalCards} card{totalCards !== 1 ? "s" : ""} from {participantCount}{" "}
@@ -301,18 +302,35 @@ export function WritingPhase({
                     {cat.label} ({catCards.length})
                   </span>
                 </div>
-                {catCards.map((card) => (
-                  <div
-                    key={card.id}
-                    className={cn(
-                      "rounded-md border-2 p-2.5 text-xs",
-                      cat.borderClass,
-                      cat.bgClass,
-                    )}
-                  >
-                    {card.text}
-                  </div>
-                ))}
+                {catCards.map((card) => {
+                  const isMine = card.anonymousId === myAnonymousId;
+                  return (
+                    <div
+                      key={card.id}
+                      className={cn(
+                        "rounded-md border-2 p-2.5 text-xs",
+                        cat.borderClass,
+                        cat.bgClass,
+                      )}
+                    >
+                      {isMine ? (
+                        card.text
+                      ) : (
+                        <div
+                          className="flex items-center gap-2 text-muted-foreground/50"
+                          aria-label="Hidden until the reveal"
+                          title="Hidden until the reveal"
+                        >
+                          <Lock width={12} height={12} className="shrink-0" />
+                          <span className="flex-1 space-y-1 py-0.5">
+                            <span className="block h-1.5 w-full rounded-full bg-current opacity-30" />
+                            <span className="block h-1.5 w-2/3 rounded-full bg-current opacity-30" />
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             );
           })}
